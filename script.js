@@ -83,4 +83,3 @@ pre {
   button {
     width: 100%;
   }
-}
