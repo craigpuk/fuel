@@ -247,11 +247,22 @@ function performCalculations(mixture, temperatureC, pressureBar, fuelFlowRateInp
   // Measured O2 in flue gas (for NOx correction)
   const measuredO2 = volumePercentagesDry.O2;
 
-  // Advanced NOx Calculations
+  // Advanced NOx and CO Calculations
+
+  // NOx Calculations
   const NOx_normalized = NOx_ppm * 2.0536;
   const NOx_flue_gas_temp = NOx_ppm * 2.0536 * (273 / (273 + flueGasTemperatureC));
   const NOx_corrected_O2_normalized = NOx_normalized * ((21 - referenceO2) / (21 - measuredO2));
   const NOx_corrected_O2_actual = NOx_flue_gas_temp * ((21 - referenceO2) / (21 - measuredO2));
+
+  // CO Calculations
+  const CO_ppm = (nCO / totalMolesWet) * 1e6; // Convert to ppm
+
+  // Optional: Normalize CO similar to NOx if needed
+  const CO_normalized = CO_ppm * 2.0536;
+  const CO_flue_gas_temp = CO_ppm * 2.0536 * (273 / (273 + flueGasTemperatureC));
+  const CO_corrected_O2_normalized = CO_normalized * ((21 - referenceO2) / (21 - measuredO2));
+  const CO_corrected_O2_actual = CO_flue_gas_temp * ((21 - referenceO2) / (21 - measuredO2));
 
   // Calculate Fuel Gas Density
   const fuelGasDensity = (totalMolarMass) / (22.414 * (pressureBar / 1)); // kg/m³ at standard conditions
@@ -280,6 +291,11 @@ function performCalculations(mixture, temperatureC, pressureBar, fuelFlowRateInp
     NOx_flue_gas_temp,
     NOx_corrected_O2_normalized,
     NOx_corrected_O2_actual,
+    CO_ppm,
+    CO_normalized,
+    CO_flue_gas_temp,
+    CO_corrected_O2_normalized,
+    CO_corrected_O2_actual,
     fuelGasDensity,
     totalMolarMass,
     totalLHV,
