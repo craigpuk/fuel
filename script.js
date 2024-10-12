@@ -3,6 +3,7 @@
 // Global variables
 let fuelData = [];
 let fuelCount = 0;
+let worker;
 
 // Fetch fuel data from JSON file
 fetch('fuel_data.json')
