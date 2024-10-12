@@ -3,7 +3,6 @@
 // Global variables
 let fuelData = [];
 let fuelCount = 0;
-let worker;
 
 // Fetch fuel data from JSON file
 fetch('fuel_data.json')
@@ -22,7 +21,37 @@ function initializeFuelSelection() {
 
 // Add a new fuel selection row
 function addFuel() {
-  // [Same as before]
+  const fuelList = document.getElementById('fuel-list');
+  const fuelItem = document.createElement('div');
+  fuelItem.className = 'fuel-item';
+  fuelItem.id = `fuel-item-${fuelCount}`;
+
+  const fuelSelect = document.createElement('select');
+  fuelSelect.id = `fuel-select-${fuelCount}`;
+  fuelData.forEach((fuel, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.text = `${fuel.Name} (${fuel.Type})`;
+    fuelSelect.appendChild(option);
+  });
+
+  const percentageInput = document.createElement('input');
+  percentageInput.type = 'number';
+  percentageInput.id = `fuel-percentage-${fuelCount}`;
+  percentageInput.placeholder = 'Percentage (%)';
+  percentageInput.min = 0;
+  percentageInput.max = 100;
+
+  const removeButton = document.createElement('button');
+  removeButton.textContent = 'Remove';
+  removeButton.onclick = () => fuelItem.remove();
+
+  fuelItem.appendChild(fuelSelect);
+  fuelItem.appendChild(percentageInput);
+  fuelItem.appendChild(removeButton);
+  fuelList.appendChild(fuelItem);
+
+  fuelCount++;
 }
 
 // Calculate button event listener
@@ -34,7 +63,19 @@ function calculateCombustion() {
   const mixture = [];
   let totalPercentage = 0;
   for (let i = 0; i < fuelCount; i++) {
-    // [Same as before]
+    const fuelItem = document.getElementById(`fuel-item-${i}`);
+    if (fuelItem) {
+      const fuelSelect = document.getElementById(`fuel-select-${i}`);
+      const percentageInput = document.getElementById(`fuel-percentage-${i}`);
+      const fuelIndex = parseInt(fuelSelect.value);
+      const percentage = parseFloat(percentageInput.value);
+      if (isNaN(percentage) || percentage <= 0) {
+        alert('Please enter a valid percentage for all fuels.');
+        return;
+      }
+      totalPercentage += percentage;
+      mixture.push({ fuel: fuelData[fuelIndex], percentage: percentage });
+    }
   }
 
   if (Math.abs(totalPercentage - 100) > 0.01) {
@@ -58,16 +99,22 @@ function calculateCombustion() {
     return;
   }
 
-  // Initialize Web Worker if not already initialized
+  // Initialize Web Worker
   if (typeof worker === 'undefined') {
     worker = new Worker('worker.js');
     worker.onmessage = function(e) {
       const results = e.data;
       displayResults(results);
+
+      // Re-enable the Calculate button
+      document.getElementById('calculate-button').disabled = false;
+      document.getElementById('calculate-button').textContent = 'Calculate';
     };
     worker.onerror = function(error) {
       console.error('Worker error:', error);
       alert('An error occurred during calculations.');
+      document.getElementById('calculate-button').disabled = false;
+      document.getElementById('calculate-button').textContent = 'Calculate';
     };
   }
 
@@ -89,10 +136,6 @@ function calculateCombustion() {
 
 // Display results
 function displayResults(results) {
-  // Re-enable the Calculate button
-  document.getElementById('calculate-button').disabled = false;
-  document.getElementById('calculate-button').textContent = 'Calculate';
-
   const output = document.getElementById('output');
   output.textContent = `
 Average Molar Weight of Fuel Mixture: ${results.totalMolarMass.toFixed(2)} g/mol
