@@ -45,6 +45,7 @@ function addFuel() {
   percentageInput.placeholder = 'Percentage (%)';
   percentageInput.min = 0;
   percentageInput.max = 100;
+  percentageInput.step = 'any';
 
   const removeButton = document.createElement('button');
   removeButton.textContent = 'Remove';
@@ -133,10 +134,12 @@ function calculateCombustion() {
   const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
   const flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
   const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
+  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value); // New input
 
   if (
     isNaN(temperatureC) || isNaN(pressureBar) ||
-    isNaN(excessAirPercentage) || isNaN(flueGasTemperature) || isNaN(referenceO2)
+    isNaN(excessAirPercentage) || isNaN(flueGasTemperature) ||
+    isNaN(referenceO2) || isNaN(inletAirTemperatureC)
   ) {
     alert('Please enter valid combustion variables.');
     return;
@@ -158,11 +161,31 @@ function calculateCombustion() {
   calculateButton.textContent = 'Calculating...';
 
   // Initialize the worker and start calculations
-  initWorker(mixture, temperatureC, pressureBar, fuelFlowRate, isMassFlowRate, excessAirPercentage, flueGasTemperature, referenceO2);
+  initWorker(
+    mixture,
+    temperatureC,
+    pressureBar,
+    fuelFlowRate,
+    isMassFlowRate,
+    excessAirPercentage,
+    flueGasTemperature,
+    referenceO2,
+    inletAirTemperatureC
+  );
 }
 
 // Initialize Web Worker
-function initWorker(mixture, temperatureC, pressureBar, fuelFlowRate, isMassFlowRate, excessAirPercentage, flueGasTemperature, referenceO2) {
+function initWorker(
+  mixture,
+  temperatureC,
+  pressureBar,
+  fuelFlowRate,
+  isMassFlowRate,
+  excessAirPercentage,
+  flueGasTemperature,
+  referenceO2,
+  inletAirTemperatureC
+) {
   if (typeof worker === 'undefined') {
     worker = new Worker('worker.js');
 
@@ -201,7 +224,8 @@ function initWorker(mixture, temperatureC, pressureBar, fuelFlowRate, isMassFlow
     isMassFlowRate,
     excessAirPercentage,
     flueGasTemperatureC: flueGasTemperature,
-    referenceO2
+    referenceO2,
+    inletAirTemperatureC
   });
 }
 
@@ -261,13 +285,5 @@ NOₓ_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)}
 NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
 NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
 NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
-
-=== Advanced CO Calculations ===
-CO (ppm): ${results.CO_ppm.toFixed(2)} ppm
-CO_normalized (mg/Nm³): ${results.CO_normalized.toFixed(2)}
-CO_flue_gas_temp (mg/Am³): ${results.CO_flue_gas_temp.toFixed(2)}
-CO_corrected_O₂_normalized (mg/Nm³): ${results.CO_corrected_O2_normalized.toFixed(2)}
-CO_corrected_O₂_actual (mg/Am³): ${results.CO_corrected_O2_actual.toFixed(2)}
 `;
 }
-
