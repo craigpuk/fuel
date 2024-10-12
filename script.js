@@ -133,13 +133,13 @@ function calculateCombustion() {
   const pressureBar = parseFloat(document.getElementById('pressure').value);
   const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
   const flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
+  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
   const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
-  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value); // New input
 
   if (
     isNaN(temperatureC) || isNaN(pressureBar) ||
     isNaN(excessAirPercentage) || isNaN(flueGasTemperature) ||
-    isNaN(referenceO2) || isNaN(inletAirTemperatureC)
+    isNaN(inletAirTemperatureC) || isNaN(referenceO2)
   ) {
     alert('Please enter valid combustion variables.');
     return;
@@ -169,8 +169,8 @@ function calculateCombustion() {
     isMassFlowRate,
     excessAirPercentage,
     flueGasTemperature,
-    referenceO2,
-    inletAirTemperatureC
+    inletAirTemperatureC,
+    referenceO2
   );
 }
 
@@ -183,8 +183,8 @@ function initWorker(
   isMassFlowRate,
   excessAirPercentage,
   flueGasTemperature,
-  referenceO2,
-  inletAirTemperatureC
+  inletAirTemperatureC,
+  referenceO2
 ) {
   if (typeof worker === 'undefined') {
     worker = new Worker('worker.js');
@@ -224,8 +224,8 @@ function initWorker(
     isMassFlowRate,
     excessAirPercentage,
     flueGasTemperatureC: flueGasTemperature,
-    referenceO2,
-    inletAirTemperatureC
+    inletAirTemperatureC,
+    referenceO2
   });
 }
 
@@ -249,7 +249,6 @@ Molar flow rates (mol/s):
 CO2: ${results.nCO2.toExponential(4)} mol/s
 H2O: ${results.nH2O.toExponential(4)} mol/s
 SO2: ${results.nSO2.toExponential(4)} mol/s
-CO: ${results.nCO.toExponential(4)} mol/s
 H2: ${results.nUnburnedH2.toExponential(4)} mol/s
 O2: ${results.nO2Excess.toExponential(4)} mol/s
 N2: ${results.nN2.toExponential(4)} mol/s
@@ -262,7 +261,6 @@ SOx Emissions: ${results.SOx_ppm.toFixed(2)} ppm
 CO2: ${results.volumePercentagesWet.CO2.toFixed(2)}%
 H2O: ${results.volumePercentagesWet.H2O.toFixed(2)}%
 SO2: ${results.volumePercentagesWet.SO2.toFixed(2)}%
-CO: ${results.volumePercentagesWet.CO.toFixed(2)}%
 H2: ${results.volumePercentagesWet.H2.toFixed(2)}%
 O2: ${results.volumePercentagesWet.O2.toFixed(2)}%
 N2: ${results.volumePercentagesWet.N2.toFixed(2)}%
@@ -272,7 +270,6 @@ Ash: ${results.volumePercentagesWet.Ash.toFixed(2)}%
 === Volume Percentages (Dry Basis) ===
 CO2: ${results.volumePercentagesDry.CO2.toFixed(2)}%
 SO2: ${results.volumePercentagesDry.SO2.toFixed(2)}%
-CO: ${results.volumePercentagesDry.CO.toFixed(2)}%
 H2: ${results.volumePercentagesDry.H2.toFixed(2)}%
 O2: ${results.volumePercentagesDry.O2.toFixed(2)}%
 N2: ${results.volumePercentagesDry.N2.toFixed(2)}%
@@ -285,5 +282,13 @@ NOₓ_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)}
 NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
 NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
 NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
-`;
+
+=== CO Calculations ===
+CO (ppm): ${results.CO_ppm.toFixed(2)} ppm
+
+=== Notes ===
+- CO ppm represents carbon monoxide emissions from incomplete combustion.
+- Other sources of CO (e.g., boiler walls) are not accounted for in this calculator.
+- Ensure proper maintenance and operation of combustion systems to minimize CO emissions.
+  `;
 }
