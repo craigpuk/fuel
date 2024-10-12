@@ -9,8 +9,8 @@ onmessage = function(e) {
     isMassFlowRate,
     excessAirPercentage,
     flueGasTemperatureC,
-    referenceO2,
-    inletAirTemperatureC
+    inletAirTemperatureC,
+    referenceO2
   } = e.data;
 
   try {
@@ -22,8 +22,8 @@ onmessage = function(e) {
       isMassFlowRate,
       excessAirPercentage,
       flueGasTemperatureC,
-      referenceO2,
-      inletAirTemperatureC
+      inletAirTemperatureC,
+      referenceO2
     );
 
     postMessage(results);
@@ -41,8 +41,8 @@ function performCalculations(
   isMassFlowRate,
   excessAirPercentage,
   flueGasTemperatureC,
-  referenceO2,
-  inletAirTemperatureC
+  inletAirTemperatureC,
+  referenceO2
 ) {
   // Constants
   const R = 8.314; // J/(mol·K)
@@ -134,6 +134,7 @@ function performCalculations(
   const excessAirFraction = excessAirPercentage / 100;
 
   // Temperature and pressure conversions
+  const inletAirTemperatureK = inletAirTemperatureC + 273.15;
   const temperatureK = temperatureC + 273.15;
   const pressurePa = pressureBar * 1e5;
 
@@ -153,7 +154,7 @@ function performCalculations(
   const nAir = nFuel * airRequiredPerMolFuel * (1 + excessAirFraction);
 
   // Air flow rate using the ideal gas law
-  const airFlowRateM3s = (nAir * R * temperatureK) / pressurePa;
+  const airFlowRateM3s = (nAir * R * inletAirTemperatureK) / pressurePa;
   const airFlowRateM3h = airFlowRateM3s * 3600;
   const airFlowRateKgs = nAir * 28.97e-3; // molar mass of air in kg/mol
   const airFlowRateKgh = airFlowRateKgs * 3600;
@@ -203,7 +204,7 @@ function performCalculations(
   const nCO2 = nC; // All combusted carbon forms CO2
   const nH2O = nH / 2; // H2 forms H2O
   const nSO2 = nS; // Sulfur forms SO2
-  const nCO = (nC * nUnburnedFuel) / nFuelCombusted; // Unburned carbon forms CO
+  const nCO = (nUnburnedFuel / nFuelCombusted) * nC; // Unburned carbon forms CO
   const nUnburnedH2 = (totalH * nUnburnedFuel) / 2; // Unburned hydrogen
 
   // Ash remains as solid
@@ -224,13 +225,7 @@ function performCalculations(
   // Calculate total moles of products
   const totalMolesProducts = nCO2 + nH2O + nSO2 + nCO + nUnburnedH2 + nO2Excess + nN2 + nAsh;
 
-  const flameTemperatureK = calculateFlameTemperature(
-    temperatureK,
-    nFuelCombusted,
-    totalMolesProducts,
-    heatingValuePerMol,
-    inletAirTemperatureC
-  );
+  const flameTemperatureK = calculateFlameTemperature(temperatureK, nFuelCombusted, totalMolesProducts, heatingValuePerMol);
 
   const NOx_ppm = estimateNOx(flameTemperatureK, excessAirFraction);
   const nNOx = nN2 * NOx_ppm / 1e6; // Convert ppm to molar flow rate
@@ -245,7 +240,6 @@ function performCalculations(
     CO2: (nCO2 / totalMolesWet) * 100,
     H2O: (nH2O / totalMolesWet) * 100,
     SO2: (nSO2 / totalMolesWet) * 100,
-    CO: (nCO / totalMolesWet) * 100,
     H2: (nUnburnedH2 / totalMolesWet) * 100,
     O2: (nO2Excess / totalMolesWet) * 100,
     N2: (nN2 / totalMolesWet) * 100,
@@ -260,7 +254,6 @@ function performCalculations(
   const volumePercentagesDry = {
     CO2: (nCO2 / totalMolesDry) * 100,
     SO2: (nSO2 / totalMolesDry) * 100,
-    CO: (nCO / totalMolesDry) * 100,
     H2: (nUnburnedH2 / totalMolesDry) * 100,
     O2: (nO2Excess / totalMolesDry) * 100,
     N2: (nN2 / totalMolesDry) * 100,
@@ -280,7 +273,11 @@ function performCalculations(
   const NOx_corrected_O2_actual = NOx_flue_gas_temp * ((21 - referenceO2) / (21 - measuredO2));
 
   // CO Calculations
-  const CO_ppm = (nCO / totalMolesWet) * 1e6; // Convert to ppm
+  // Only calculate CO ppm if combustion efficiency < 100%
+  let CO_ppm = 0;
+  if (combustionEfficiencyFraction < 1) {
+    CO_ppm = (nCO / totalMolesWet) * 1e6; // Convert to ppm
+  }
 
   // Calculate Fuel Gas Density
   const fuelGasDensity = (totalMolarMass) / (22.414 * (pressureBar / 1)); // kg/m³ at standard conditions
@@ -318,16 +315,7 @@ function performCalculations(
 }
 
 // Function to calculate flame temperature (improved)
-function calculateFlameTemperature(
-  T_initial,
-  nFuelCombusted,
-  totalMolesProducts,
-  heatingValuePerMol,
-  inletAirTemperatureC
-) {
-  // Convert inlet air temperature to Kelvin
-  const inletAirTemperatureK = inletAirTemperatureC + 273.15;
-
+function calculateFlameTemperature(T_initial, nFuelCombusted, totalMolesProducts, heatingValuePerMol) {
   // Use average specific heat capacity of products at high temperatures
   const Cp_products = 37; // J/(mol·K), approximate average value
 
@@ -337,8 +325,7 @@ function calculateFlameTemperature(
   // Temperature rise (K)
   const deltaT = heatReleased / (totalMolesProducts * Cp_products);
 
-  // Flame temperature influenced by inlet air temperature
-  return inletAirTemperatureK + deltaT; // Flame temperature in Kelvin
+  return T_initial + deltaT; // Flame temperature in Kelvin
 }
 
 // Function to estimate NOx emissions (ppm) based on flame temperature and excess air
