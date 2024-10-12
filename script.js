@@ -48,6 +48,7 @@ function addFuel() {
 
   const removeButton = document.createElement('button');
   removeButton.textContent = 'Remove';
+  removeButton.type = 'button';
   removeButton.onclick = () => {
     fuelItem.remove();
     updateFlowRateLabel();
@@ -152,8 +153,9 @@ function calculateCombustion() {
   const isMassFlowRate = containsSolidFuel;
 
   // Disable the Calculate button
-  document.getElementById('calculate-button').disabled = true;
-  document.getElementById('calculate-button').textContent = 'Calculating...';
+  const calculateButton = document.getElementById('calculate-button');
+  calculateButton.disabled = true;
+  calculateButton.textContent = 'Calculating...';
 
   // Initialize the worker and start calculations
   initWorker(mixture, temperatureC, pressureBar, fuelFlowRate, isMassFlowRate, excessAirPercentage, flueGasTemperature, referenceO2);
@@ -259,5 +261,13 @@ NOₓ_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)}
 NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
 NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
 NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
+
+=== Advanced CO Calculations ===
+CO (ppm): ${results.CO_ppm.toFixed(2)} ppm
+CO_normalized (mg/Nm³): ${results.CO_normalized.toFixed(2)}
+CO_flue_gas_temp (mg/Am³): ${results.CO_flue_gas_temp.toFixed(2)}
+CO_corrected_O₂_normalized (mg/Nm³): ${results.CO_corrected_O2_normalized.toFixed(2)}
+CO_corrected_O₂_actual (mg/Am³): ${results.CO_corrected_O2_actual.toFixed(2)}
 `;
 }
+
