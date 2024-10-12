@@ -9,12 +9,12 @@ h1, h2 {
 
 label {
   display: inline-block;
-  width: 200px;
+  width: 220px;
   margin-top: 10px;
 }
 
 input {
-  width: 100px;
+  width: 150px;
 }
 
 button {
