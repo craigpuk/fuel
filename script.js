@@ -12,7 +12,10 @@ fetch('fuel_data.json')
     fuelData = data;
     initializeFuelSelection();
   })
-  .catch(error => console.error('Error loading fuel data:', error));
+  .catch(error => {
+    console.error('Error loading fuel data:', error);
+    alert('Failed to load fuel data.');
+  });
 
 // Initialize fuel selection
 function initializeFuelSelection() {
@@ -61,7 +64,7 @@ document.getElementById('calculate-button').addEventListener('click', calculateC
 // Main calculation function
 function calculateCombustion() {
   // Get fuel mixture
-  const mixture = [];
+  mixture = [];
   let totalPercentage = 0;
   for (let i = 0; i < fuelCount; i++) {
     const fuelItem = document.getElementById(`fuel-item-${i}`);
@@ -85,12 +88,12 @@ function calculateCombustion() {
   }
 
   // Get combustion variables
-  const temperatureC = parseFloat(document.getElementById('temperature').value);
-  const pressureBar = parseFloat(document.getElementById('pressure').value);
-  const gasFlowRate = parseFloat(document.getElementById('gas-flow-rate').value);
-  const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
-  const flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
-  const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
+  temperatureC = parseFloat(document.getElementById('temperature').value);
+  pressureBar = parseFloat(document.getElementById('pressure').value);
+  gasFlowRate = parseFloat(document.getElementById('gas-flow-rate').value);
+  excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
+  flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
+  referenceO2 = parseFloat(document.getElementById('reference-o2').value);
 
   if (
     isNaN(temperatureC) || isNaN(pressureBar) || isNaN(gasFlowRate) ||
@@ -100,30 +103,65 @@ function calculateCombustion() {
     return;
   }
 
-  // Initialize Web Worker
-  if (typeof worker === 'undefined') {
-    worker = new Worker('worker.js');
-    worker.onmessage = function(e) {
-      const results = e.data;
-      displayResults(results);
-
-      // Re-enable the Calculate button
-      document.getElementById('calculate-button').disabled = false;
-      document.getElementById('calculate-button').textContent = 'Calculate';
-    };
-    worker.onerror = function(error) {
-      console.error('Worker error:', error);
-      alert('An error occurred during calculations.');
-      document.getElementById('calculate-button').disabled = false;
-      document.getElementById('calculate-button').textContent = 'Calculate';
-    };
-  }
-
-  // Disable the Calculate button to prevent multiple clicks
+  // Disable the Calculate button
   document.getElementById('calculate-button').disabled = true;
   document.getElementById('calculate-button').textContent = 'Calculating...';
 
-  // Send data to the worker
+  // Initialize the worker and start calculations
+  initWorker();
+}
+
+// Initialize Web Worker
+function initWorker() {
+  if (typeof worker === 'undefined') {
+    fetch('worker.js')
+      .then(response => response.text())
+      .then(workerScript => {
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        const blobURL = URL.createObjectURL(blob);
+        worker = new Worker(blobURL);
+
+        worker.onmessage = function(e) {
+          const results = e.data;
+
+          if (results.error) {
+            alert('An error occurred during calculations: ' + results.error);
+            console.error('Calculation error:', results.error);
+            document.getElementById('calculate-button').disabled = false;
+            document.getElementById('calculate-button').textContent = 'Calculate';
+            return;
+          }
+
+          displayResults(results);
+
+          // Re-enable the Calculate button
+          document.getElementById('calculate-button').disabled = false;
+          document.getElementById('calculate-button').textContent = 'Calculate';
+        };
+
+        worker.onerror = function(error) {
+          console.error('Worker error:', error);
+          alert('An error occurred during calculations.');
+          document.getElementById('calculate-button').disabled = false;
+          document.getElementById('calculate-button').textContent = 'Calculate';
+        };
+
+        // Now that the worker is initialized, post data to it
+        postToWorker();
+      })
+      .catch(error => {
+        console.error('Error loading worker script:', error);
+        alert('Failed to initialize calculations.');
+        document.getElementById('calculate-button').disabled = false;
+        document.getElementById('calculate-button').textContent = 'Calculate';
+      });
+  } else {
+    // Worker already initialized
+    postToWorker();
+  }
+}
+
+function postToWorker() {
   worker.postMessage({
     mixture,
     temperatureC,
