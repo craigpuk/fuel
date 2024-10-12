@@ -98,9 +98,15 @@ function performCalculations(mixture, temperatureC, pressureBar, gasFlowRateM3h,
   const O2FractionInAir = 0.2095; // More precise value
   const airRequiredPerMolFuel = O2RequiredPerMolFuel / O2FractionInAir;
 
-  // Molar flow rate of air required (mol/s)
+  // Excess air fraction
   const excessAirFraction = excessAirPercentage / 100;
+
+  // Correct calculation of nAir
   const nAir = nFuel * airRequiredPerMolFuel * (1 + excessAirFraction);
+
+  // Air flow rate (m³/h) using the ideal gas law
+  const airFlowRateM3s = (nAir * R * temperatureK) / pressurePa;
+  const airFlowRateM3h = airFlowRateM3s * 3600;
 
   // Combustion efficiency estimation based on excess air
   const combustionEfficiency = 100 - (excessAirFraction * 2); // Simplified estimation
@@ -109,10 +115,6 @@ function performCalculations(mixture, temperatureC, pressureBar, gasFlowRateM3h,
   // Adjust fuel combusted based on combustion efficiency
   const nFuelCombusted = nFuel * combustionEfficiencyFraction;
   const nUnburnedFuel = nFuel - nFuelCombusted;
-
-  // Air flow rate (m³/h)
-  const airFlowRateM3s = (nAir * R * temperatureK) / pressurePa;
-  const airFlowRateM3h = airFlowRateM3s * 3600;
 
   // Total N2 from air
   const nN2Air = nAir * (1 - O2FractionInAir);
@@ -237,25 +239,25 @@ function performCalculations(mixture, temperatureC, pressureBar, gasFlowRateM3h,
 
 // Function to calculate flame temperature (simplified)
 function calculateFlameTemperature(T_initial, nFuelCombusted, nAir, heatingValuePerMol) {
-  // Simplified calculation assuming constant specific heat capacity
-  // Cp of flue gas (approximate): 29 J/(mol·K)
-  const Cp_flue_gas = 29; // J/(mol·K)
+  // Improved calculation using average specific heat capacities
+  const Cp_products = 37; // J/(mol·K), average value for combustion products at high temperatures
   const heatReleased = nFuelCombusted * heatingValuePerMol * 1000; // Convert kJ/mol to J/mol
-  const deltaT = heatReleased / ((nFuelCombusted + nAir) * Cp_flue_gas); // Temperature rise in K
+  const totalMoles = nFuelCombusted + nAir; // Total moles of reactants
+
+  const deltaT = heatReleased / (totalMoles * Cp_products); // Temperature rise in K
 
   return T_initial + deltaT; // Flame temperature in Kelvin
 }
 
 // Function to estimate NOx emissions (ppm) based on flame temperature and excess air
 function estimateNOx(flameTemperatureK, excessAirFraction) {
-  // Empirical correlation for thermal NOx formation
-  // NOx_ppm = A * exp(B * (T_flame - 2000)) * (O2%)^C
-  const A = 6e-6; // Empirical constant
-  const B = 0.0004; // Empirical constant
+  // Adjusted empirical correlation for thermal NOx formation
+  const A = 1e-5; // Adjusted empirical constant
+  const B = 0.0006; // Adjusted empirical constant
   const C = 0.5; // Empirical constant
   const O2_percent = excessAirFraction * 100; // Excess O2 percentage
 
-  const NOx_ppm = A * Math.exp(B * (flameTemperatureK - 2000)) * Math.pow(O2_percent, C) * 1e6; // Convert to ppm
+  const NOx_ppm = A * Math.exp(B * (flameTemperatureK - 2000)) * Math.pow(O2_percent + 1, C) * 1e6; // Convert to ppm
 
   return NOx_ppm;
 }
