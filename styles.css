@@ -67,3 +67,19 @@ pre {
   border-radius: 5px;
   overflow: auto;
 }
+
+/* Tooltip Styling */
+input[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 4px;
+  top: 50px;
+  left: 220px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0.8;
+  font-size: 12px;
+}
