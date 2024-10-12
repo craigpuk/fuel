@@ -1,0 +1,34 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+h1, h2 {
+  color: #333;
+}
+
+label {
+  display: inline-block;
+  width: 200px;
+  margin-top: 10px;
+}
+
+input {
+  width: 100px;
+}
+
+button {
+  margin-top: 20px;
+}
+
+#fuel-selection, #combustion-variables, #results {
+  margin-bottom: 40px;
+}
+
+.fuel-item {
+  margin-bottom: 10px;
+}
+
+.fuel-item select, .fuel-item input {
+  margin-right: 10px;
+}

@@ -1,0 +1,12 @@
+[
+  {"Name": "Methane", "Type": "Gas", "Formula": "CH₄", "MolarMass": 16.04, "C": 1, "H": 4},
+  {"Name": "Ethane", "Type": "Gas", "Formula": "C₂H₆", "MolarMass": 30.07, "C": 2, "H": 6},
+  {"Name": "Propane", "Type": "Gas", "Formula": "C₃H₈", "MolarMass": 44.09, "C": 3, "H": 8},
+  {"Name": "Butane", "Type": "Gas", "Formula": "C₄H₁₀", "MolarMass": 58.12, "C": 4, "H": 10},
+  {"Name": "Pentane", "Type": "Liquid", "Formula": "C₅H₁₂", "MolarMass": 72.15, "C": 5, "H": 12},
+  {"Name": "Hexane", "Type": "Liquid", "Formula": "C₆H₁₄", "MolarMass": 86.18, "C": 6, "H": 14},
+  {"Name": "Heptane", "Type": "Liquid", "Formula": "C₇H₁₆", "MolarMass": 100.21, "C": 7, "H": 16},
+  {"Name": "Octane", "Type": "Liquid", "Formula": "C₈H₁₈", "MolarMass": 114.23, "C": 8, "H": 18},
+  {"Name": "Carbon", "Type": "Solid", "Formula": "C", "MolarMass": 12.01, "C": 1},
+  {"Name": "Sulfur", "Type": "Solid", "Formula": "S", "MolarMass": 32.07, "S": 1}
+]

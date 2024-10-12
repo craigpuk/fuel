@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Combustion Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Combustion Calculator</h1>
+
+  <div id="fuel-selection">
+    <h2>Select Fuels and Percentages</h2>
+    <div id="fuel-list"></div>
+    <button id="add-fuel-button">Add Fuel</button>
+  </div>
+
+  <div id="combustion-variables">
+    <h2>Enter Combustion Variables</h2>
+    <label for="temperature">Temperature (°C):</label>
+    <input type="number" id="temperature" value="25"><br>
+
+    <label for="pressure">Pressure (bar):</label>
+    <input type="number" id="pressure" value="1"><br>
+
+    <label for="gas-flow-rate">Gas Flow Rate (m³/h):</label>
+    <input type="number" id="gas-flow-rate" value="100"><br>
+
+    <label for="excess-air">Excess Air Percentage (%):</label>
+    <input type="number" id="excess-air" value="10"><br>
+
+    <label for="combustion-efficiency">Combustion Efficiency (%):</label>
+    <input type="number" id="combustion-efficiency" value="100"><br>
+
+    <button id="calculate-button">Calculate</button>
+  </div>
+
+  <div id="results">
+    <h2>Results</h2>
+    <pre id="output"></pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
