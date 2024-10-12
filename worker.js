@@ -27,8 +27,8 @@ onmessage = function(e) {
 // Include the performCalculations function and helper functions
 function performCalculations(mixture, temperatureC, pressureBar, gasFlowRateM3h, excessAirPercentage, flueGasTemperatureC, referenceO2) {
   // [Copy the performCalculations function from the script.js provided earlier]
-  // Due to space constraints, please refer to the performCalculations function in the script.js above.
   // Ensure that all helper functions like calculateFlameTemperature and estimateNOx are included.
+  // Due to space constraints, please use the performCalculations function and helper functions from the script.js provided above.
 }
 
 // Function to calculate flame temperature (simplified)
