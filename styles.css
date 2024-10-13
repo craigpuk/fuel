@@ -1,85 +1,174 @@
 /* styles.css */
 
+/* Basic Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body Styling */
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
-  background-color: #f5f5f5;
-}
-
-h1, h2, h3 {
+  background-color: #f4f4f4;
   color: #333;
-}
-
-label {
-  display: inline-block;
-  width: 220px;
-  margin-top: 10px;
-  font-weight: bold;
-}
-
-input {
-  width: 150px;
-  padding: 5px;
-  margin-top: 10px;
-}
-
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-#fuel-selection, #combustion-variables, #results {
-  background-color: white;
   padding: 20px;
-  margin-bottom: 40px;
+}
+
+/* Header */
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+/* Section Styling */
+#fuel-selection, #combustion-variables, #results {
+  background-color: #fff;
+  padding: 20px;
+  margin-bottom: 20px;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+h2, h3 {
+  margin-bottom: 15px;
+  color: #34495e;
+}
+
+/* Form Elements */
+label {
+  display: inline-block;
+  width: 250px;
+  margin-top: 10px;
+  vertical-align: top;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 200px;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+input[type="checkbox"] {
+  margin-top: 12px;
+}
+
+/* Buttons */
+button {
+  padding: 10px 15px;
+  margin-top: 15px;
+  margin-right: 10px;
+  border: none;
+  border-radius: 4px;
+  background-color: #2980b9;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #3498db;
+}
+
+button.remove-fuel-button {
+  background-color: #e74c3c;
+}
+
+button.remove-fuel-button:hover {
+  background-color: #c0392b;
+}
+
+/* Fuel Items */
 .fuel-item {
   margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  background-color: #ecf0f1;
 }
 
-.fuel-item select, .fuel-item input {
+.fuel-item select,
+.fuel-item input {
   margin-right: 10px;
-  padding: 5px;
 }
 
-.fuel-item button {
-  background-color: #f44336;
+/* Modal Styling */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
-.fuel-item button:hover {
-  background-color: #da190b;
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto; /* 5% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 60%; /* Could be more or less, depending on screen size */
+  border-radius: 5px;
+  position: relative;
 }
 
-pre {
-  background-color: #eef;
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: black;
+  text-decoration: none;
+}
+
+/* Combustion Points */
+#combustion-points .point {
+  border: 1px solid #bdc3c7;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background-color: #ecf0f1;
+}
+
+#combustion-points .point label {
+  width: 180px;
+}
+
+#combustion-points .point input {
+  width: 150px;
+}
+
+/* Results Styling */
+#results pre {
+  background-color: #ecf0f1;
   padding: 15px;
   border-radius: 5px;
-  overflow: auto;
+  overflow-x: auto;
 }
 
-/* Tooltip Styling */
-input[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  background-color: #333;
-  color: #fff;
-  padding: 5px 8px;
-  border-radius: 4px;
-  top: 50px;
-  left: 220px;
-  white-space: nowrap;
-  z-index: 1000;
-  opacity: 0.8;
-  font-size: 12px;
+/* Responsive Design */
+@media (max-width: 768px) {
+  label, input[type="text"], input[type="number"], select {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .modal-content {
+    width: 90%;
+  }
 }
