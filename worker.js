@@ -1,3 +1,5 @@
+// worker.js
+
 onmessage = function(e) {
   const {
     mixture,
@@ -8,14 +10,10 @@ onmessage = function(e) {
     excessAirPercentage,
     flueGasTemperatureC,
     inletAirTemperatureC,
-    referenceO2,
-    newFuel // New fuel data
+    referenceO2
   } = e.data;
 
   try {
-    if (newFuel) {
-      addNewFuelType(newFuel); // Add new fuel to the mixture
-    }
     const results = performCalculations(
       mixture,
       temperatureC,
@@ -33,24 +31,6 @@ onmessage = function(e) {
     postMessage({ error: error.message });
   }
 };
-
-// Function to add new fuel type to the mixture
-function addNewFuelType(newFuel) {
-  const fuel = {
-    Name: newFuel.name,
-    MolarMass: newFuel.molarMass,
-    HeatingValue: newFuel.heatingValue,
-    HHV: newFuel.hhv,
-    C: newFuel.c,
-    H: newFuel.h,
-    O: newFuel.o,
-    N: newFuel.n,
-    S: newFuel.s,
-    AshContent: newFuel.ash,
-    MoistureContent: newFuel.moisture
-  };
-  mixture.push({ fuel, percentage: newFuel.percentage });
-}
 
 // Calculation logic
 function performCalculations(

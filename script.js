@@ -20,7 +20,6 @@ fetch('fuel_data.json')
 // Initialize fuel selection
 function initializeFuelSelection() {
   document.getElementById('add-fuel-button').addEventListener('click', addFuel);
-  document.getElementById('add-new-fuel-button').addEventListener('click', addNewFuel);
   addFuel(); // Add the first fuel selection
 }
 
@@ -68,22 +67,6 @@ function addFuel() {
 
   // Update flow rate label in case a solid fuel is added
   updateFlowRateLabel();
-}
-
-// Add a new fuel type
-function addNewFuel() {
-  const newFuelName = document.getElementById('new-fuel-name').value;
-  const newFuelType = document.getElementById('new-fuel-type').value;
-
-  if (newFuelName && newFuelType) {
-    const newFuel = { Name: newFuelName, Type: newFuelType };
-    fuelData.push(newFuel);
-    alert(`New fuel added: ${newFuelName} (${newFuelType})`);
-    document.getElementById('new-fuel-name').value = '';
-    document.getElementById('new-fuel-type').value = '';
-  } else {
-    alert('Please enter both fuel name and type.');
-  }
 }
 
 // Update flow rate label based on fuel types selected
@@ -293,12 +276,12 @@ N2: ${results.volumePercentagesDry.N2.toFixed(2)}%
 NOx: ${results.volumePercentagesDry.NOx.toFixed(2)}%
 Ash: ${results.volumePercentagesDry.Ash.toFixed(2)}%
 
-=== Advanced NOx Calculations ===
-NOx (ppm): ${results.NOx_ppm.toFixed(2)} ppm
-NOx_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)}
-NOx_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
-NOx_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
-NOx_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
+=== Advanced NOₓ Calculations ===
+NOₓ (ppm): ${results.NOx_ppm.toFixed(2)} ppm
+NOₓ_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)}
+NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
+NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
+NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
 
 === CO Calculations ===
 CO (ppm): ${results.CO_ppm.toFixed(2)} ppm
