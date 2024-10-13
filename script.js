@@ -204,7 +204,11 @@ function populateCalculationDetails(results) {
     <h4>Step-by-Step Calculations</h4>
     <p><strong>Stoichiometric CO₂:</strong> ${results.stoichiometricCO2.toFixed(2)}%</p>
     <p><strong>Actual CO₂:</strong> ${results.actualCO2.toFixed(2)}%</p>
-    <p><strong>Combustion Efficiency:</strong> ${results.combustionEfficiency.toFixed(2)}%</p>
+    <p><strong>Dry CO₂:</strong> ${results.dryCO2.toFixed(2)}%</p>
+    <p><strong>Wet CO₂:</strong> ${results.wetCO2.toFixed(2)}%</p>
+    <p><strong>NOx Emission:</strong> ${results.NOx.toFixed(2)} ppm</p>
+    <p><strong>SOx Emission:</strong> ${results.SOx.toFixed(2)} ppm</p>
+    <p><strong>CO Emission:</strong> ${results.CO.toFixed(2)} ppm</p>
     <p><strong>Air Flow Rate:</strong> ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}</p>
     <p><strong>Molar Flow Rate of Fuel:</strong> ${results.nFuel.toFixed(4)} mol/s</p>
     <p><strong>Flame Temperature:</strong> ${(results.flameTemperatureK - 273.15).toFixed(2)} °C</p>
