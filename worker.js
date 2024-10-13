@@ -193,8 +193,8 @@ function performCalculations(
     flowRateUnit = 'm³/h';
   }
 
-  // Combustion Efficiency Calculation based on CO₂%
-  // Step 1: Calculate stoichiometric CO₂% based on fuel composition
+  // Combustion Efficiency Calculation based on CO2%
+  // Step 1: Calculate stoichiometric CO2% based on fuel composition
   let stoichCO2_mol = 0;
   let stoichSO2_mol = 0;
   let stoichNOx_mol = 0;
@@ -222,30 +222,22 @@ function performCalculations(
   // Total moles dry products at stoich
   const totalMolesDryProducts_stoich = nCO2_stoich + nSO2_stoich + nNOx_stoich + nN2_stoich + nAsh_stoich;
 
-  // Stoichiometric CO₂% (dry basis)
+  // Stoichiometric CO2% (dry basis)
   const stoichCO2_percent = (nCO2_stoich / totalMolesDryProducts_stoich) * 100;
 
-  // Step 2: Get actual CO₂% from current combustion
-  const actualCO2_percent = (resultsCalcCO2(mixture, nFuel, combustionEfficiencyFraction)) / resultsTotalMolesDry(resultsCalcCO2(mixture, nFuel, combustionEfficiencyFraction), resultsCalcOtherProducts(resultsCalcCO2(mixture, nFuel, combustionEfficiencyFraction))) * 100;
-
-  // But more accurately, since combustionEfficiency is already based on CO2% over stoichCO2%, we'll calculate it as:
-  // combustionEfficiency = (actualCO2_percent / stoichCO2_percent) * 100
-
-  // Proceed with other calculations to get actualCO2_percent
-
-  // First, perform combustion calculations based on fuel and air
+  // Perform combustion calculations based on fuel and air
   const combustionResults = calculateCombustionProducts(
     mixture,
     nFuel,
     nAir,
-    adjustedO2FractionInAir,
-    adjustedN2FractionInAir,
-    adjustedH2OFractionInAir,
+    O2_fraction,
+    N2_fraction,
+    H2O_fraction,
     totalAshContent
   );
 
   // Actual CO2% based on combustion
-  const actualCO2_percent_calculated = (combustionResults.nCO2 / combustionResults.totalMolesDryProducts) * 100;
+  const actualCO2_percent_calculated = (combustionResults.nCO2 / combustionResults.totalMolesProducts) * 100;
 
   // Combustion Efficiency
   const combustionEfficiency = (actualCO2_percent_calculated / stoichCO2_percent) * 100;
@@ -366,7 +358,6 @@ function calculateCombustionProducts(
   let nCO2 = 0;
   let nH2O = 0;
   let nSO2 = 0;
-  let nNOx = 0;
   let nCO = 0;
   let nUnburnedH2 = 0;
   let nO2Excess = 0;
@@ -384,32 +375,16 @@ function calculateCombustionProducts(
     nCO2 += C * nFuel;
     nH2O += (H / 2) * nFuel;
     nSO2 += S * nFuel;
-    nNOx += N * nFuel;
+    // For simplicity, assuming all nitrogen forms NOx
+    nN2 += N * nFuel;
+    nAsh += nFuel * (totalAshContent / 100);
   });
 
-  // Assuming all unburned fuel forms CO and H2
-  // For stoichiometric combustion, no unburned fuel
-  // Here, based on combustion efficiency, unburned fuel is handled
-  // However, in this simplified model, we'll assume complete combustion except for efficiency adjustments
-
-  // Calculate excess oxygen
-  // Oxygen consumed is based on stoichiometric requirements
-  // Oxygen supplied is based on air flow
-  // Excess oxygen = supplied - consumed
-  // But since actual combustion efficiency affects fuel combustion, adjustments are needed
-  // For simplicity, assuming excess air is already considered in air flow
-
-  // Calculate nitrogen
-  nN2 = nAir * N2_fraction;
-
-  // Calculate ash
-  nAsh = nFuel * (totalAshContent / 100);
+  // Assuming complete combustion except for efficiency adjustments
+  // Excess O2 is handled in combustion efficiency
 
   // Total moles of products
   const totalMolesProducts = nCO2 + nH2O + nSO2 + nCO + nUnburnedH2 + nO2Excess + nN2 + nAsh;
-
-  // Assume no unburned fuel for stoichiometric combustion
-  // Adjust based on combustion efficiency elsewhere
 
   return {
     nCO2,
