@@ -203,6 +203,7 @@ function initWorker(
   relativeHumidity
 ) {
   if (typeof worker === 'undefined') {
+    // Ensure the path to worker.js is correct relative to index.html
     worker = new Worker('worker.js');
 
     worker.onmessage = function(e) {
@@ -259,20 +260,20 @@ Molar Flow Rate of Fuel: ${results.nFuel.toFixed(4)} mol/s<br>
 Molar Flow Rate of Air Required: ${results.nAir.toFixed(4)} mol/s<br>
 Required Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}<br>
 Combustion Efficiency: ${results.combustionEfficiency.toFixed(2)}%<br>
-Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C<br>
+Flame Temperature: ${(results.combustionResults.flameTemperatureK - 273.15).toFixed(2)} °C<br>
 Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³<br><br>
 
 === Combustion Products ===<br>
 Molar flow rates (mol/s):<br>
-CO<sub>2</sub>: ${results.nCO2.toExponential(4)} mol/s<br>
-H<sub>2</sub>O: ${results.nH2O.toExponential(4)} mol/s<br>
-SO<sub>2</sub>: ${results.nSO2.toExponential(4)} mol/s<br>
-CO: ${results.nCO.toExponential(4)} mol/s<br>
-H<sub>2</sub>: ${results.nUnburnedH2.toExponential(4)} mol/s<br>
-O<sub>2</sub>: ${results.nO2Excess.toExponential(4)} mol/s<br>
-N<sub>2</sub>: ${results.nN2.toExponential(4)} mol/s<br>
-NO<sub>x</sub>: ${results.nNOx.toExponential(4)} mol/s<br>
-Ash: ${results.nAsh.toExponential(4)} mol/s<br><br>
+CO<sub>2</sub>: ${results.combustionResults.nCO2.toExponential(4)} mol/s<br>
+H<sub>2</sub>O: ${results.combustionResults.nH2O.toExponential(4)} mol/s<br>
+SO<sub>2</sub>: ${results.combustionResults.nSO2.toExponential(4)} mol/s<br>
+CO: ${results.combustionResults.nCO.toExponential(4)} mol/s<br>
+H<sub>2</sub>: ${results.combustionResults.nUnburnedH2.toExponential(4)} mol/s<br>
+O<sub>2</sub>: ${results.combustionResults.nO2Excess.toExponential(4)} mol/s<br>
+N<sub>2</sub>: ${results.combustionResults.nN2.toExponential(4)} mol/s<br>
+NO<sub>x</sub>: ${results.combustionResults.nNOx.toExponential(4)} mol/s<br>
+Ash: ${results.combustionResults.nAsh.toExponential(4)} mol/s<br><br>
 
 SO<sub>x</sub> Emissions: ${results.SOx_ppm.toFixed(2)} ppm<br><br>
 
@@ -289,6 +290,7 @@ Ash: ${results.volumePercentagesWet.Ash.toFixed(2)}%<br><br>
 === Volume Percentages (Dry Basis) ===<br>
 CO<sub>2</sub>: ${results.volumePercentagesDry.CO2.toFixed(2)}%<br>
 SO<sub>2</sub>: ${results.volumePercentagesDry.SO2.toFixed(2)}%<br>
+CO: ${results.volumePercentagesDry.CO.toFixed(2)}%<br>
 H<sub>2</sub>: ${results.volumePercentagesDry.H2.toFixed(2)}%<br>
 O<sub>2</sub>: ${results.volumePercentagesDry.O2.toFixed(2)}%<br>
 N<sub>2</sub>: ${results.volumePercentagesDry.N2.toFixed(2)}%<br>
@@ -410,14 +412,15 @@ document.getElementById('export-csv-button').addEventListener('click', exportCSV
 
 function exportCSV() {
   const output = document.getElementById('output').innerText;
-  const blob = new Blob([output], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-
+  const lines = output.split('<br>').map(line => line.replace(/<[^>]+>/g, ''));
+  const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
+  const encodedUri = encodeURI(csvContent);
+  
   const link = document.createElement('a');
-  link.setAttribute('href', url);
+  link.setAttribute('href', encodedUri);
   link.setAttribute('download', 'combustion_results.csv');
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
+  document.body.appendChild(link); // Required for FF
+
   link.click();
   document.body.removeChild(link);
 }
@@ -433,9 +436,12 @@ function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    doc.text("Combustion Results", 10, 10);
-    const output = document.getElementById('output').innerText.split('\n').join('\n');
-    doc.text(output, 10, 20);
+    doc.setFontSize(16);
+    doc.text("Combustion Results", 10, 20);
+    doc.setFontSize(12);
+    const output = document.getElementById('output').innerText;
+    const lines = doc.splitTextToSize(output, 180);
+    doc.text(lines, 10, 30);
     doc.save('combustion_results.pdf');
   };
   document.head.appendChild(script);
