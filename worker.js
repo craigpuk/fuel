@@ -145,11 +145,12 @@ function performCalculations(
     stoichCO2 += fuel.C * fuelFraction; // mol CO2 per mol fuel
   });
 
-  // Process combustion points
+  // Initialize variables for aggregation
   let totalEfficiency = 0;
   let totalCostSavings = 0;
   let costAnalysis = '';
 
+  // Process each combustion point
   combustionPoints.forEach((point, index) => {
     const { flowRate, o2, co2 } = point;
 
@@ -164,26 +165,35 @@ function performCalculations(
     }
     const nFuelPointPerSecond = nFuelPoint / 3600; // mol/s
 
-    // Stoichiometric CO2 for this flow rate
-    const stoichCO2Point = stoichCO2 * nFuelPoint; // mol CO2
+    // Calculate stoichiometric O2 and air for this flow rate
+    const stoichO2Point = stoichO2 * nFuelPoint; // mol O2
+    const nAirO2Point = stoichO2Point * (1 + excessAirPercentage / 100); // mol O2
+    const nAirN2Point = nAirO2Point * (79 / 21); // mol N2
+    const nAirPoint = nAirO2Point + nAirN2Point; // mol/h
+    const nAirPointPerSecond = nAirPoint / 3600; // mol/s
+
+    // Total flue gas molar flow rate
+    const nTotalFlueGas = nFuelPointPerSecond + nAirPointPerSecond; // mol/s
+
+    // Calculate actual CO2 production based on percentage
+    const nCO2_measured = (co2 / 100) * nTotalFlueGas; // mol/s
 
     // Combustion Efficiency
-    const efficiency = (co2 / stoichCO2Point) * 100; // %
+    const combustionEfficiency = (nCO2_measured / (stoichCO2 * nFuelPointPerSecond)) * 100; // %
 
-    totalEfficiency += efficiency;
+    totalEfficiency += combustionEfficiency;
 
     // Cost Calculations
     let costAtPoint = 0;
     if (isCostCalculationEnabled) {
-      // Cost is proportional to flow rate and inversely proportional to efficiency
-      // Simplified calculation: (flowRate / efficiency) * fuelCost
-      costAtPoint = (flowRate / efficiency) * fuelCost;
+      // Simplified cost calculation: (flowRate / efficiency) * fuelCost
+      costAtPoint = (flowRate / combustionEfficiency) * fuelCost;
       totalCostSavings += costAtPoint; // Assuming operating hours are accounted for elsewhere
       costAnalysis += `Point ${index + 1}:\n` +
                      `  Flow Rate: ${flowRate.toFixed(2)} ${flowRateUnit}\n` +
                      `  O₂ Reading: ${o2.toFixed(2)}%\n` +
                      `  CO₂ Reading: ${co2.toFixed(2)}%\n` +
-                     `  Combustion Efficiency: ${efficiency.toFixed(2)}%\n` +
+                     `  Combustion Efficiency: ${combustionEfficiency.toFixed(2)}%\n` +
                      `  Cost at Point: $${costAtPoint.toFixed(2)}\n\n`;
     }
   });
@@ -206,7 +216,7 @@ function performCalculations(
   const nSO2 = 0; // Placeholder
   const nCO = 0; // Placeholder
   const nUnburnedH2 = 0; // Placeholder
-  const nO2Excess = (nAirPerSecond * 0.21) - (stoichO2 / 3600); // mol/s
+  const nO2Excess = ((nAirPerSecond * 0.21) - stoichO2) / 3600; // mol/s (simplified)
   const nN2 = (nAirPerSecond * 0.79).toFixed(4); // mol/s
   const nNOx = 0; // Placeholder
   const nAsh = 0; // Placeholder
