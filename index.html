@@ -2,138 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Combustion Calculator</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Combustion Calculator</h1>
 
-  <!-- Fuel Selection Section -->
+  <!-- Fuel Selection Area -->
   <div id="fuel-selection">
     <h2>Select Fuels and Percentages</h2>
-    <div id="fuel-list">
-      <!-- Dynamic Fuel Entries Will Appear Here -->
-    </div>
+    <div id="fuel-list"></div>
     <button id="add-fuel-button">Add Fuel</button>
-    <button id="create-custom-fuel-button">Create Custom Fuel</button>
   </div>
 
-  <!-- Custom Fuel Creation Form -->
-  <div id="custom-fuel-form" class="modal" style="display: none;">
-    <div class="modal-content">
-      <span class="close-button">&times;</span>
-      <h2>Create Custom Fuel</h2>
-      <form id="custom-fuel-form-element">
-        <label for="custom-fuel-name">Name:</label>
-        <input type="text" id="custom-fuel-name" required><br>
-
-        <label for="custom-fuel-formula">Formula:</label>
-        <input type="text" id="custom-fuel-formula" required><br>
-
-        <label for="custom-fuel-symbol">Symbol:</label>
-        <input type="text" id="custom-fuel-symbol" required><br>
-
-        <label for="custom-fuel-type">Type:</label>
-        <select id="custom-fuel-type" required>
-          <option value="">Select Type</option>
-          <option value="Gas">Gas</option>
-          <option value="Liquid">Liquid</option>
-          <option value="Solid">Solid</option>
-        </select><br>
-
-        <label for="custom-fuel-molar-mass">Molar Mass (g/mol):</label>
-        <input type="number" id="custom-fuel-molar-mass" step="0.01" required><br>
-
-        <label for="custom-fuel-heating-value">Lower Heating Value (MJ/kg):</label>
-        <input type="number" id="custom-fuel-heating-value" step="0.01" required><br>
-
-        <label for="custom-fuel-hhv">Higher Heating Value (MJ/kg):</label>
-        <input type="number" id="custom-fuel-hhv" step="0.01" required><br>
-
-        <label for="custom-fuel-C">Carbon (C) Content (mol/mol):</label>
-        <input type="number" id="custom-fuel-C" step="0.01" required><br>
-
-        <label for="custom-fuel-H">Hydrogen (H) Content (mol/mol):</label>
-        <input type="number" id="custom-fuel-H" step="0.01" required><br>
-
-        <label for="custom-fuel-O">Oxygen (O) Content (mol/mol):</label>
-        <input type="number" id="custom-fuel-O" step="0.01" required><br>
-
-        <label for="custom-fuel-N">Nitrogen (N) Content (mol/mol):</label>
-        <input type="number" id="custom-fuel-N" step="0.01" required><br>
-
-        <label for="custom-fuel-S">Sulfur (S) Content (mol/mol):</label>
-        <input type="number" id="custom-fuel-S" step="0.01" required><br>
-
-        <label for="custom-fuel-ash">Ash Content (%):</label>
-        <input type="number" id="custom-fuel-ash" step="0.01" required><br>
-
-        <label for="custom-fuel-moisture">Moisture Content (%):</label>
-        <input type="number" id="custom-fuel-moisture" step="0.01" required><br>
-
-        <button type="submit">Save Custom Fuel</button>
-        <button type="button" id="cancel-custom-fuel-button">Cancel</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Combustion Variables Section -->
+  <!-- Combustion Variables Area -->
   <div id="combustion-variables">
     <h2>Enter Combustion Variables</h2>
-    <form id="combustion-form">
-      <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate (m³/h):</label>
-      <input type="number" id="fuel-flow-rate" step="0.01" min="0" required><br>
 
-      <label for="temperature">Temperature (°C):</label>
-      <input type="number" id="temperature" step="0.01" required><br>
+    <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate (m³/h):</label>
+    <input type="number" id="fuel-flow-rate" placeholder="Enter fuel flow rate"><br>
 
-      <label for="inlet-air-temperature">Inlet Air Temperature (°C):</label>
-      <input type="number" id="inlet-air-temperature" step="0.01" required><br>
+    <label for="min-flow-rate">Minimum Flow Rate (m³/h or kg/h):</label>
+    <input type="number" id="min-flow-rate" placeholder="Enter minimum flow rate"><br>
 
-      <label for="pressure">Pressure (bar):</label>
-      <input type="number" id="pressure" step="0.01" required><br>
+    <label for="max-flow-rate">Maximum Flow Rate (m³/h or kg/h):</label>
+    <input type="number" id="max-flow-rate" placeholder="Enter maximum flow rate"><br>
 
-      <label for="excess-air">Excess Air Percentage (%):</label>
-      <input type="number" id="excess-air" step="0.01" required><br>
+    <label for="temperature">Temperature (°C):</label>
+    <input type="number" id="temperature" value="25" placeholder="Enter temperature"><br>
 
-      <label for="flue-gas-temperature">Flue Gas Temperature (°C):</label>
-      <input type="number" id="flue-gas-temperature" step="0.01" required><br>
+    <label for="inlet-air-temperature">Inlet Air Temperature (°C):</label>
+    <input type="number" id="inlet-air-temperature" value="10" placeholder="Enter inlet air temperature"><br>
 
-      <label for="reference-o2">Reference O₂ (%):</label>
-      <input type="number" id="reference-o2" step="0.01" required><br>
+    <label for="pressure">Pressure (bar):</label>
+    <input type="number" id="pressure" value="1" placeholder="Enter pressure"><br>
 
-      <label>
-        <input type="checkbox" id="enable-cost-calculation"> Enable Fuel Cost Calculation
-      </label><br>
+    <label for="excess-air">Excess Air Percentage (%):</label>
+    <input type="number" id="excess-air" value="10" placeholder="Enter excess air percentage"><br>
 
-      <div id="cost-inputs" style="display: none;">
-        <label for="fuel-cost">Fuel Cost (per m³/h or kg/h):</label>
-        <input type="number" id="fuel-cost" step="0.01" min="0"><br>
+    <label for="flue-gas-temperature">Flue Gas Temperature (°C):</label>
+    <input type="number" id="flue-gas-temperature" value="150" placeholder="Enter flue gas temperature"><br>
 
-        <label for="min-flow-rate">Min Flow Rate (m³/h or kg/h):</label>
-        <input type="number" id="min-flow-rate" step="0.01" min="0"><br>
+    <label for="reference-o2">Reference O₂ (%):</label>
+    <input type="number" id="reference-o2" value="3" placeholder="Enter reference O₂"><br>
 
-        <label for="max-flow-rate">Max Flow Rate (m³/h or kg/h):</label>
-        <input type="number" id="max-flow-rate" step="0.01" min="0"><br>
-      </div>
+    <label for="enable-cost-calculation">Enable Fuel Cost Calculation:</label>
+    <input type="checkbox" id="enable-cost-calculation"><br>
 
-      <h3>Enter O₂ and CO₂ Readings for 10 Points</h3>
-      <div id="combustion-points">
-        <!-- Dynamic Combustion Points Will Appear Here -->
-      </div>
+    <label for="fuel-cost">Fuel Cost ($/m³ or $/kg):</label>
+    <input type="number" id="fuel-cost" placeholder="Enter fuel cost"><br>
 
-      <button type="button" id="calculate-button">Calculate</button>
-    </form>
   </div>
 
-  <!-- Results Section -->
+  <!-- Combustion Points Area -->
+  <div id="combustion-points">
+    <h2>Enter O₂ and CO₂ Readings for 10 Points</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Point</th>
+          <th>Flow Rate</th>
+          <th>O₂ (%)</th>
+          <th>CO₂ (%)</th>
+        </tr>
+      </thead>
+      <tbody id="combustion-points-body">
+        <!-- Dynamically create rows for the 10 combustion points -->
+        <tr>
+          <td>1</td>
+          <td><input type="number" disabled id="flow-0"></td>
+          <td><input type="number" id="o2-0" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-0" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><input type="number" disabled id="flow-1"></td>
+          <td><input type="number" id="o2-1" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-1" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><input type="number" disabled id="flow-2"></td>
+          <td><input type="number" id="o2-2" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-2" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><input type="number" disabled id="flow-3"></td>
+          <td><input type="number" id="o2-3" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-3" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><input type="number" disabled id="flow-4"></td>
+          <td><input type="number" id="o2-4" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-4" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><input type="number" disabled id="flow-5"></td>
+          <td><input type="number" id="o2-5" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-5" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><input type="number" disabled id="flow-6"></td>
+          <td><input type="number" id="o2-6" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-6" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><input type="number" disabled id="flow-7"></td>
+          <td><input type="number" id="o2-7" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-7" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><input type="number" disabled id="flow-8"></td>
+          <td><input type="number" id="o2-8" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-8" placeholder="CO₂ (%)"></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><input type="number" disabled id="flow-9"></td>
+          <td><input type="number" id="o2-9" placeholder="O₂ (%)"></td>
+          <td><input type="number" id="co2-9" placeholder="CO₂ (%)"></td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Calculate Button -->
+  <button id="calculate-button">Calculate</button>
+
+  <!-- Results Area -->
   <div id="results">
     <h2>Results</h2>
     <pre id="output"></pre>
   </div>
 
-  <!-- Scripts -->
   <script src="script.js"></script>
 </body>
 </html>
