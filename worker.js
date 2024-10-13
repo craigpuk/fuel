@@ -77,6 +77,7 @@ function performCalculations(
   const R = 8.314; // Universal gas constant J/(mol·K)
   const pressurePa = pressureBar * 1e5; // Convert bar to Pascals
   const temperatureK = temperatureC + 273.15; // Convert Celsius to Kelvin
+  const inletAirTempK = inletAirTemperatureC + 273.15;
 
   // Determine flow rate unit based on fuel types
   let flowRateUnit = 'm³/h';
@@ -150,6 +151,11 @@ function performCalculations(
   let totalCostSavings = 0;
   let costAnalysis = '';
 
+  // Validate that there are exactly 10 combustion points
+  if (combustionPoints.length !== 10) {
+    throw new Error('Exactly 10 combustion points must be provided.');
+  }
+
   // Process each combustion point
   combustionPoints.forEach((point, index) => {
     const { flowRate, o2, co2 } = point;
@@ -179,16 +185,21 @@ function performCalculations(
     const nCO2_measured = (co2 / 100) * nTotalFlueGas; // mol/s
 
     // Combustion Efficiency
-    const combustionEfficiency = (nCO2_measured / (stoichCO2 * nFuelPointPerSecond)) * 100; // %
+    const stoichCO2_flowRate = stoichCO2 * (flowRate / fuelFlowRate); // mol/s
+    const combustionEfficiency = (nCO2_measured / stoichCO2_flowRate) * 100; // %
 
+    // Aggregate efficiency
     totalEfficiency += combustionEfficiency;
 
     // Cost Calculations
     let costAtPoint = 0;
     if (isCostCalculationEnabled) {
-      // Simplified cost calculation: (flowRate / efficiency) * fuelCost
+      // Cost is proportional to flow rate and inversely proportional to efficiency
+      // Simplified calculation: (flowRate / efficiency) * fuelCost
       costAtPoint = (flowRate / combustionEfficiency) * fuelCost;
-      totalCostSavings += costAtPoint; // Assuming operating hours are accounted for elsewhere
+      totalCostSavings += costAtPoint; // Assuming operational hours are accounted for elsewhere
+
+      // Append to cost analysis
       costAnalysis += `Point ${index + 1}:\n` +
                      `  Flow Rate: ${flowRate.toFixed(2)} ${flowRateUnit}\n` +
                      `  O₂ Reading: ${o2.toFixed(2)}%\n` +
@@ -237,7 +248,7 @@ function performCalculations(
     airFlowRate: parseFloat(airFlowRateM3h.toFixed(2)), // m³/h
     flowRateUnit: flowRateUnit,
     combustionEfficiency: parseFloat(averageEfficiency.toFixed(2)), // %
-    flameTemperatureC: flueGasTemperatureC, // °C
+    flameTemperatureK: flueGasTemperatureC + 273.15, // K
     fuelGasDensity: parseFloat((fuelFlowRate / airFlowRateM3h).toFixed(4)), // kg/m³ (simplified)
     // Emissions (placeholders)
     nCO2: parseFloat(nCO2.toFixed(4)), // mol/s
@@ -259,8 +270,8 @@ function performCalculations(
       flowRate: point.flowRate,
       o2: point.o2,
       co2: point.co2,
-      efficiency: ((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100).toFixed(2),
-      cost: isCostCalculationEnabled ? ((point.flowRate / ((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100)) * fuelCost).toFixed(2) : 'N/A'
+      efficiency: parseFloat(((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100).toFixed(2)),
+      cost: isCostCalculationEnabled ? parseFloat(((point.flowRate / ((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100)) * fuelCost).toFixed(2)) : 'N/A'
     })),
     costAnalysis: isCostCalculationEnabled ? costAnalysis : 'Fuel cost calculations are disabled.'
   };
