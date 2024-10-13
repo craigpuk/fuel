@@ -1,23 +1,20 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Combustion Calculator</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Combustion Calculator</h1>
 
-  <!-- Fuel Selection Section -->
   <div id="fuel-selection">
     <h2>Select Fuels and Percentages</h2>
     <div id="fuel-list"></div>
     <button id="add-fuel-button">Add Fuel</button>
-    <button id="add-custom-fuel-button">Add Custom Fuel</button>
   </div>
 
-  <!-- Combustion Variables Section -->
   <div id="combustion-variables">
     <h2>Enter Combustion Variables</h2>
     <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate:</label>
@@ -44,28 +41,11 @@
     <button id="calculate-button">Calculate</button>
   </div>
 
-  <!-- Results Section -->
   <div id="results">
     <h2>Results</h2>
     <pre id="output"></pre>
   </div>
 
-  <!-- Flame Visualization Section -->
-  <div id="flame-visualization">
-    <h2>Flame Visualization</h2>
-    <canvas id="flameCanvas" width="400" height="400"></canvas>
-  </div>
-
-  <!-- Detailed Calculation Section -->
-  <div id="calculation-details">
-    <h3>Calculation Details</h3>
-    <button id="toggle-details">Info +</button>
-    <div id="details-content" style="display: none;">
-      <!-- Detailed calculation information will be dynamically added here -->
-    </div>
-  </div>
-
-  <!-- Link to JavaScript file -->
   <script src="script.js"></script>
 </body>
 </html>

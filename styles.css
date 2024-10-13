@@ -1,4 +1,5 @@
-/* General Styles */
+/* styles.css */
+
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
@@ -35,7 +36,7 @@ button:hover {
   background-color: #45a049;
 }
 
-#fuel-selection, #combustion-variables, #results, #calculation-details {
+#fuel-selection, #combustion-variables, #results {
   background-color: white;
   padding: 20px;
   margin-bottom: 40px;
@@ -43,7 +44,6 @@ button:hover {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Fuel Selection */
 .fuel-item {
   margin-bottom: 10px;
 }
@@ -68,39 +68,18 @@ pre {
   overflow: auto;
 }
 
-/* Flame Visualization Canvas */
-canvas {
-  max-width: 100%;
-  margin: 20px auto;
-  display: block;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-}
-
-/* Toggle Info Button */
-#toggle-details {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-#toggle-details:hover {
-  background-color: #0b7dda;
-}
-
-/* Hidden Detailed Calculation Section */
-#details-content {
-  padding: 10px;
-  border: 1px solid #ccc;
-  background-color: #fafafa;
-  border-radius: 5px;
-  display: none; /* Hidden by default */
-}
-
-#details-content p {
-  font-size: 14px;
-  color: #333;
+/* Tooltip Styling */
+input[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 4px;
+  top: 50px;
+  left: 220px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0.8;
+  font-size: 12px;
 }
