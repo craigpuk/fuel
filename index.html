@@ -1,187 +1,49 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Combustion Calculator</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Combustion Calculator</h1>
 
-  <!-- Fuel Selection Area -->
   <div id="fuel-selection">
     <h2>Select Fuels and Percentages</h2>
     <div id="fuel-list"></div>
     <button id="add-fuel-button">Add Fuel</button>
-    <button id="add-custom-fuel-button">Add Custom Fuel</button>
   </div>
 
-  <!-- Combustion Variables Area -->
   <div id="combustion-variables">
     <h2>Enter Combustion Variables</h2>
-
-    <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate (m³/h):</label>
-    <input type="number" id="fuel-flow-rate" placeholder="Enter fuel flow rate"><br>
-
-    <label for="min-flow-rate">Minimum Flow Rate (m³/h or kg/h):</label>
-    <input type="number" id="min-flow-rate" placeholder="Enter minimum flow rate"><br>
-
-    <label for="max-flow-rate">Maximum Flow Rate (m³/h or kg/h):</label>
-    <input type="number" id="max-flow-rate" placeholder="Enter maximum flow rate"><br>
+    <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate:</label>
+    <input type="number" id="fuel-flow-rate" value="1600" step="any"><br>
 
     <label for="temperature">Temperature (°C):</label>
-    <input type="number" id="temperature" value="25" placeholder="Enter temperature"><br>
+    <input type="number" id="temperature" value="25" step="any"><br>
 
     <label for="inlet-air-temperature">Inlet Air Temperature (°C):</label>
-    <input type="number" id="inlet-air-temperature" value="10" placeholder="Enter inlet air temperature"><br>
+    <input type="number" id="inlet-air-temperature" value="10" step="any"><br>
 
     <label for="pressure">Pressure (bar):</label>
-    <input type="number" id="pressure" value="1" placeholder="Enter pressure"><br>
+    <input type="number" id="pressure" value="1" step="any"><br>
 
     <label for="excess-air">Excess Air Percentage (%):</label>
-    <input type="number" id="excess-air" value="10" placeholder="Enter excess air percentage"><br>
+    <input type="number" id="excess-air" value="10" step="any"><br>
 
     <label for="flue-gas-temperature">Flue Gas Temperature (°C):</label>
-    <input type="number" id="flue-gas-temperature" value="150" placeholder="Enter flue gas temperature"><br>
+    <input type="number" id="flue-gas-temperature" value="200" step="any"><br>
 
     <label for="reference-o2">Reference O₂ (%):</label>
-    <input type="number" id="reference-o2" value="3" placeholder="Enter reference O₂"><br>
+    <input type="number" id="reference-o2" value="3" step="any"><br>
 
-    <label for="enable-cost-calculation">Enable Fuel Cost Calculation:</label>
-    <input type="checkbox" id="enable-cost-calculation" onchange="toggleCombustionPoints()"><br>
-
-    <label for="fuel-cost">Fuel Cost ($/m³ or $/kg):</label>
-    <input type="number" id="fuel-cost" placeholder="Enter fuel cost"><br>
-
+    <button id="calculate-button">Calculate</button>
   </div>
 
-  <!-- Combustion Points Area (Initially Hidden) -->
-  <div id="combustion-points" style="display: none;">
-    <h2>Enter O₂ and CO₂ Readings for 10 Points</h2>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Point</th>
-          <th>Flow Rate</th>
-          <th>O₂ (%)</th>
-          <th>CO₂ (%)</th>
-        </tr>
-      </thead>
-      <tbody id="combustion-points-body">
-        <tr>
-          <td>1</td>
-          <td><input type="number" disabled id="flow-0"></td>
-          <td><input type="number" id="o2-0" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-0" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td><input type="number" disabled id="flow-1"></td>
-          <td><input type="number" id="o2-1" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-1" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td><input type="number" disabled id="flow-2"></td>
-          <td><input type="number" id="o2-2" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-2" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>4</td>
-          <td><input type="number" disabled id="flow-3"></td>
-          <td><input type="number" id="o2-3" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-3" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>5</td>
-          <td><input type="number" disabled id="flow-4"></td>
-          <td><input type="number" id="o2-4" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-4" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>6</td>
-          <td><input type="number" disabled id="flow-5"></td>
-          <td><input type="number" id="o2-5" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-5" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>7</td>
-          <td><input type="number" disabled id="flow-6"></td>
-          <td><input type="number" id="o2-6" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-6" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>8</td>
-          <td><input type="number" disabled id="flow-7"></td>
-          <td><input type="number" id="o2-7" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-7" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>9</td>
-          <td><input type="number" disabled id="flow-8"></td>
-          <td><input type="number" id="o2-8" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-8" placeholder="CO₂ (%)"></td>
-        </tr>
-        <tr>
-          <td>10</td>
-          <td><input type="number" disabled id="flow-9"></td>
-          <td><input type="number" id="o2-9" placeholder="O₂ (%)"></td>
-          <td><input type="number" id="co2-9" placeholder="CO₂ (%)"></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Calculate Button -->
-  <button id="calculate-button">Calculate</button>
-
-  <!-- Results Area -->
   <div id="results">
     <h2>Results</h2>
     <pre id="output"></pre>
-  </div>
-
-  <!-- Custom Fuel Modal -->
-  <div id="custom-fuel-modal" style="display: none;">
-    <h2>Add Custom Fuel</h2>
-    <label for="custom-fuel-name">Fuel Name:</label>
-    <input type="text" id="custom-fuel-name" placeholder="Fuel Name"><br>
-
-    <label for="custom-fuel-type">Fuel Type:</label>
-    <select id="custom-fuel-type">
-      <option value="Gas">Gas</option>
-      <option value="Liquid">Liquid</option>
-      <option value="Solid">Solid</option>
-    </select><br>
-
-    <label for="custom-fuel-molar-mass">Molar Mass (g/mol):</label>
-    <input type="number" id="custom-fuel-molar-mass" placeholder="Molar Mass"><br>
-
-    <label for="custom-fuel-C">Carbon Content (C):</label>
-    <input type="number" id="custom-fuel-C" placeholder="Carbon Content"><br>
-
-    <label for="custom-fuel-H">Hydrogen Content (H):</label>
-    <input type="number" id="custom-fuel-H" placeholder="Hydrogen Content"><br>
-
-    <label for="custom-fuel-O">Oxygen Content (O):</label>
-    <input type="number" id="custom-fuel-O" placeholder="Oxygen Content"><br>
-
-    <label for="custom-fuel-N">Nitrogen Content (N):</label>
-    <input type="number" id="custom-fuel-N" placeholder="Nitrogen Content"><br>
-
-    <label for="custom-fuel-S">Sulfur Content (S):</label>
-    <input type="number" id="custom-fuel-S" placeholder="Sulfur Content"><br>
-
-    <label for="custom-fuel-LHV">Lower Heating Value (LHV) (MJ/kg):</label>
-    <input type="number" id="custom-fuel-LHV" placeholder="LHV"><br>
-
-    <label for="custom-fuel-HHV">Higher Heating Value (HHV) (MJ/kg):</label>
-    <input type="number" id="custom-fuel-HHV" placeholder="HHV"><br>
-
-    <button id="save-custom-fuel">Save Custom Fuel</button>
-    <button id="cancel-custom-fuel">Cancel</button>
   </div>
 
   <script src="script.js"></script>

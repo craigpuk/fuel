@@ -1,9 +1,12 @@
+/* styles.css */
+
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
+  background-color: #f5f5f5;
 }
 
-h1, h2 {
+h1, h2, h3 {
   color: #333;
 }
 
@@ -11,19 +14,34 @@ label {
   display: inline-block;
   width: 220px;
   margin-top: 10px;
+  font-weight: bold;
 }
 
-input, select {
+input {
   width: 150px;
+  padding: 5px;
+  margin-top: 10px;
 }
 
 button {
   margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
   cursor: pointer;
 }
 
+button:hover {
+  background-color: #45a049;
+}
+
 #fuel-selection, #combustion-variables, #results {
+  background-color: white;
+  padding: 20px;
   margin-bottom: 40px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .fuel-item {
@@ -32,48 +50,36 @@ button {
 
 .fuel-item select, .fuel-item input {
   margin-right: 10px;
+  padding: 5px;
 }
 
-#combustion-points table {
-  width: 100%;
-  border-collapse: collapse;
+.fuel-item button {
+  background-color: #f44336;
 }
 
-#combustion-points table, #combustion-points th, #combustion-points td {
-  border: 1px solid black;
+.fuel-item button:hover {
+  background-color: #da190b;
 }
 
-#combustion-points th, #combustion-points td {
-  padding: 10px;
-  text-align: center;
+pre {
+  background-color: #eef;
+  padding: 15px;
+  border-radius: 5px;
+  overflow: auto;
 }
 
-#results pre {
-  background-color: #f4f4f4;
-  padding: 10px;
-  border: 1px solid #ccc;
-  overflow-x: auto;
-}
-
-#custom-fuel-modal {
-  position: fixed;
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, -20%);
-  background-color: #fff;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-}
-
-#custom-fuel-modal input {
-  width: 200px;
-}
-
-#custom-fuel-modal select {
-  width: 200px;
-}
-
-#custom-fuel-modal button {
-  width: 100px;
-  margin-right: 10px;
+/* Tooltip Styling */
+input[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 4px;
+  top: 50px;
+  left: 220px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0.8;
+  font-size: 12px;
 }
