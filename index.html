@@ -14,6 +14,7 @@
     <h2>Select Fuels and Percentages</h2>
     <div id="fuel-list"></div>
     <button id="add-fuel-button">Add Fuel</button>
+    <button id="add-custom-fuel-button">Add Custom Fuel</button>
   </div>
 
   <!-- Combustion Variables Area -->
@@ -48,15 +49,15 @@
     <input type="number" id="reference-o2" value="3" placeholder="Enter reference O₂"><br>
 
     <label for="enable-cost-calculation">Enable Fuel Cost Calculation:</label>
-    <input type="checkbox" id="enable-cost-calculation"><br>
+    <input type="checkbox" id="enable-cost-calculation" onchange="toggleCombustionPoints()"><br>
 
     <label for="fuel-cost">Fuel Cost ($/m³ or $/kg):</label>
     <input type="number" id="fuel-cost" placeholder="Enter fuel cost"><br>
 
   </div>
 
-  <!-- Combustion Points Area -->
-  <div id="combustion-points">
+  <!-- Combustion Points Area (Initially Hidden) -->
+  <div id="combustion-points" style="display: none;">
     <h2>Enter O₂ and CO₂ Readings for 10 Points</h2>
 
     <table>
@@ -69,7 +70,6 @@
         </tr>
       </thead>
       <tbody id="combustion-points-body">
-        <!-- Dynamically create rows for the 10 combustion points -->
         <tr>
           <td>1</td>
           <td><input type="number" disabled id="flow-0"></td>
@@ -132,7 +132,6 @@
         </tr>
       </tbody>
     </table>
-
   </div>
 
   <!-- Calculate Button -->
@@ -142,6 +141,47 @@
   <div id="results">
     <h2>Results</h2>
     <pre id="output"></pre>
+  </div>
+
+  <!-- Custom Fuel Modal -->
+  <div id="custom-fuel-modal" style="display: none;">
+    <h2>Add Custom Fuel</h2>
+    <label for="custom-fuel-name">Fuel Name:</label>
+    <input type="text" id="custom-fuel-name" placeholder="Fuel Name"><br>
+
+    <label for="custom-fuel-type">Fuel Type:</label>
+    <select id="custom-fuel-type">
+      <option value="Gas">Gas</option>
+      <option value="Liquid">Liquid</option>
+      <option value="Solid">Solid</option>
+    </select><br>
+
+    <label for="custom-fuel-molar-mass">Molar Mass (g/mol):</label>
+    <input type="number" id="custom-fuel-molar-mass" placeholder="Molar Mass"><br>
+
+    <label for="custom-fuel-C">Carbon Content (C):</label>
+    <input type="number" id="custom-fuel-C" placeholder="Carbon Content"><br>
+
+    <label for="custom-fuel-H">Hydrogen Content (H):</label>
+    <input type="number" id="custom-fuel-H" placeholder="Hydrogen Content"><br>
+
+    <label for="custom-fuel-O">Oxygen Content (O):</label>
+    <input type="number" id="custom-fuel-O" placeholder="Oxygen Content"><br>
+
+    <label for="custom-fuel-N">Nitrogen Content (N):</label>
+    <input type="number" id="custom-fuel-N" placeholder="Nitrogen Content"><br>
+
+    <label for="custom-fuel-S">Sulfur Content (S):</label>
+    <input type="number" id="custom-fuel-S" placeholder="Sulfur Content"><br>
+
+    <label for="custom-fuel-LHV">Lower Heating Value (LHV) (MJ/kg):</label>
+    <input type="number" id="custom-fuel-LHV" placeholder="LHV"><br>
+
+    <label for="custom-fuel-HHV">Higher Heating Value (HHV) (MJ/kg):</label>
+    <input type="number" id="custom-fuel-HHV" placeholder="HHV"><br>
+
+    <button id="save-custom-fuel">Save Custom Fuel</button>
+    <button id="cancel-custom-fuel">Cancel</button>
   </div>
 
   <script src="script.js"></script>
