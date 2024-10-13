@@ -1,174 +1,79 @@
-/* styles.css */
-
-/* Basic Reset */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-/* Body Styling */
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  margin: 20px;
+}
+
+h1, h2 {
   color: #333;
-  padding: 20px;
 }
 
-/* Header */
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #2c3e50;
-}
-
-/* Section Styling */
-#fuel-selection, #combustion-variables, #results {
-  background-color: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-h2, h3 {
-  margin-bottom: 15px;
-  color: #34495e;
-}
-
-/* Form Elements */
 label {
   display: inline-block;
-  width: 250px;
+  width: 220px;
   margin-top: 10px;
-  vertical-align: top;
 }
 
-input[type="text"],
-input[type="number"],
-select {
-  width: 200px;
-  padding: 8px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-input[type="checkbox"] {
-  margin-top: 12px;
-}
-
-/* Buttons */
-button {
-  padding: 10px 15px;
-  margin-top: 15px;
-  margin-right: 10px;
-  border: none;
-  border-radius: 4px;
-  background-color: #2980b9;
-  color: #fff;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #3498db;
-}
-
-button.remove-fuel-button {
-  background-color: #e74c3c;
-}
-
-button.remove-fuel-button:hover {
-  background-color: #c0392b;
-}
-
-/* Fuel Items */
-.fuel-item {
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #bdc3c7;
-  border-radius: 4px;
-  background-color: #ecf0f1;
-}
-
-.fuel-item select,
-.fuel-item input {
-  margin-right: 10px;
-}
-
-/* Modal Styling */
-.modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-
-.modal-content {
-  background-color: #fefefe;
-  margin: 5% auto; /* 5% from the top and centered */
-  padding: 20px;
-  border: 1px solid #888;
-  width: 60%; /* Could be more or less, depending on screen size */
-  border-radius: 5px;
-  position: relative;
-}
-
-.close-button {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  position: absolute;
-  top: 10px;
-  right: 20px;
-  cursor: pointer;
-}
-
-.close-button:hover,
-.close-button:focus {
-  color: black;
-  text-decoration: none;
-}
-
-/* Combustion Points */
-#combustion-points .point {
-  border: 1px solid #bdc3c7;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  background-color: #ecf0f1;
-}
-
-#combustion-points .point label {
-  width: 180px;
-}
-
-#combustion-points .point input {
+input, select {
   width: 150px;
 }
 
-/* Results Styling */
+button {
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+#fuel-selection, #combustion-variables, #results {
+  margin-bottom: 40px;
+}
+
+.fuel-item {
+  margin-bottom: 10px;
+}
+
+.fuel-item select, .fuel-item input {
+  margin-right: 10px;
+}
+
+#combustion-points table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#combustion-points table, #combustion-points th, #combustion-points td {
+  border: 1px solid black;
+}
+
+#combustion-points th, #combustion-points td {
+  padding: 10px;
+  text-align: center;
+}
+
 #results pre {
-  background-color: #ecf0f1;
-  padding: 15px;
-  border-radius: 5px;
+  background-color: #f4f4f4;
+  padding: 10px;
+  border: 1px solid #ccc;
   overflow-x: auto;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  label, input[type="text"], input[type="number"], select {
-    width: 100%;
-    margin-right: 0;
-  }
+#custom-fuel-modal {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
 
-  .modal-content {
-    width: 90%;
-  }
+#custom-fuel-modal input {
+  width: 200px;
+}
+
+#custom-fuel-modal select {
+  width: 200px;
+}
+
+#custom-fuel-modal button {
+  width: 100px;
+  margin-right: 10px;
 }
