@@ -23,6 +23,7 @@ function initializeFuelSelection() {
   document.getElementById('add-custom-fuel-button').addEventListener('click', openCustomFuelModal);
   document.getElementById('save-custom-fuel').addEventListener('click', saveCustomFuel);
   document.getElementById('cancel-custom-fuel').addEventListener('click', closeCustomFuelModal);
+  document.getElementById('calculate-button').addEventListener('click', calculateCombustion);
   addFuel(); // Add the first fuel selection
 }
 
@@ -40,7 +41,7 @@ function addFuel() {
   [...fuelData, ...customFuels].forEach((fuel, index) => {
     const option = document.createElement('option');
     option.value = index;
-    option.text = `${fuel.Name} (${fuel.Symbol})`;
+    option.text = `${fuel.Name} (${fuel.Symbol || fuel.Type})`;
     fuelSelect.appendChild(option);
   });
 
@@ -107,8 +108,140 @@ function toggleCombustionPoints() {
   }
 }
 
-// Placeholder for worker initialization and calculation logic
-document.getElementById('calculate-button').addEventListener('click', () => {
-  // Placeholder: Call the worker for calculation
-  alert('Calculation triggered. Placeholder for further development.');
-});
+// Main function to start the calculation
+function calculateCombustion() {
+  const mixture = [];
+  let totalPercentage = 0;
+
+  for (let i = 0; i < fuelCount; i++) {
+    const fuelSelect = document.getElementById(`fuel-select-${i}`);
+    const percentageInput = document.getElementById(`fuel-percentage-${i}`);
+    const fuelIndex = parseInt(fuelSelect.value);
+    const percentage = parseFloat(percentageInput.value);
+
+    if (isNaN(percentage) || percentage <= 0) {
+      alert('Please enter valid percentages for all fuels.');
+      return;
+    }
+
+    totalPercentage += percentage;
+    mixture.push({ fuel: [...fuelData, ...customFuels][fuelIndex], percentage });
+  }
+
+  if (totalPercentage !== 100) {
+    alert('Total percentage must equal 100%.');
+    return;
+  }
+
+  // Get input values
+  const temperatureC = parseFloat(document.getElementById('temperature').value);
+  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
+  const pressureBar = parseFloat(document.getElementById('pressure').value);
+  const fuelFlowRate = parseFloat(document.getElementById('fuel-flow-rate').value);
+  const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
+  const flueGasTemperatureC = parseFloat(document.getElementById('flue-gas-temperature').value);
+  const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
+
+  const isCostCalculationEnabled = document.getElementById('enable-cost-calculation').checked;
+  const fuelCost = isCostCalculationEnabled ? parseFloat(document.getElementById('fuel-cost').value) : null;
+
+  const minFlowRate = parseFloat(document.getElementById('min-flow-rate').value);
+  const maxFlowRate = parseFloat(document.getElementById('max-flow-rate').value);
+  const combustionPoints = [];
+
+  if (isCostCalculationEnabled) {
+    for (let i = 0; i < 10; i++) {
+      const o2 = parseFloat(document.getElementById(`o2-${i}`).value);
+      const co2 = parseFloat(document.getElementById(`co2-${i}`).value);
+      const flowRate = minFlowRate + (maxFlowRate - minFlowRate) * (i / 9);
+
+      if (isNaN(o2) || isNaN(co2)) {
+        alert(`Please enter valid O₂ and CO₂ values for all 10 points.`);
+        return;
+      }
+
+      combustionPoints.push({ o2, co2, flowRate });
+    }
+  }
+
+  if (typeof worker === 'undefined') {
+    worker = new Worker('worker.js');
+
+    // Handle results from worker
+    worker.onmessage = function(e) {
+      const results = e.data;
+
+      if (results.error) {
+        alert('Error during calculations: ' + results.error);
+        console.error('Calculation error:', results.error);
+        return;
+      }
+
+      displayResults(results);
+    };
+
+    worker.onerror = function(error) {
+      console.error('Worker error:', error);
+      alert('An error occurred during the calculations.');
+    };
+  }
+
+  // Send data to worker for calculation
+  worker.postMessage({
+    mixture,
+    temperatureC,
+    inletAirTemperatureC,
+    pressureBar,
+    fuelFlowRate,
+    excessAirPercentage,
+    flueGasTemperatureC,
+    referenceO2,
+    isCostCalculationEnabled,
+    fuelCost,
+    minFlowRate,
+    maxFlowRate,
+    combustionPoints
+  });
+}
+
+// Display results from the worker
+function displayResults(results) {
+  const output = document.getElementById('output');
+  output.textContent = `
+Average Molar Weight of Fuel Mixture: ${results.totalMolarMass.toFixed(2)} g/mol
+Lower Heating Value (LHV): ${results.totalLHV.toFixed(2)} MJ/kg
+Higher Heating Value (HHV): ${results.totalHHV.toFixed(2)} MJ/kg
+
+Molar Flow Rate of Fuel: ${results.nFuel.toFixed(4)} mol/s
+Molar Flow Rate of Air Required: ${results.nAir.toFixed(4)} mol/s
+Required Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}
+Combustion Efficiency: ${results.combustionEfficiency.toFixed(2)}%
+Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C
+Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³
+
+=== Combustion Products ===
+Molar flow rates (mol/s):
+CO2: ${results.wetBasis.CO2.toFixed(4)} mol/s
+H2O: ${results.wetBasis.H2O.toFixed(4)} mol/s
+O2: ${results.wetBasis.O2.toFixed(4)} mol/s
+N2: ${results.wetBasis.N2.toFixed(4)} mol/s
+
+=== Volume Percentages (Wet Basis) ===
+CO2: ${results.wetBasis.CO2.toFixed(2)}%
+H2O: ${results.wetBasis.H2O.toFixed(2)}%
+O2: ${results.wetBasis.O2.toFixed(2)}%
+N2: ${results.wetBasis.N2.toFixed(2)}%
+
+=== Volume Percentages (Dry Basis) ===
+CO2: ${results.dryBasis.CO2.toFixed(2)}%
+O2: ${results.dryBasis.O2.toFixed(2)}%
+N2: ${results.dryBasis.N2.toFixed(2)}%
+
+=== NOₓ Calculations ===
+NOₓ (ppm): ${results.NOx_ppm.toFixed(2)} ppm
+`;
+
+  if (results.costAnalysis) {
+    output.textContent += `\n=== Cost Analysis ===\n${results.costAnalysis}`;
+  }
+}
