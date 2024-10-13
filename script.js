@@ -3,6 +3,21 @@ let fuelData = [];
 let fuelCount = 0;
 let worker;
 
+// Initialize Web Worker
+if (window.Worker) {
+  worker = new Worker('worker.js');
+  worker.onmessage = function (e) {
+    const results = e.data;
+    if (results.error) {
+      alert(`Error: ${results.error}`);
+    } else {
+      displayResults(results);
+    }
+  };
+} else {
+  alert('Your browser does not support Web Workers.');
+}
+
 // Fetch fuel data from JSON file
 fetch('fuel_data.json')
   .then(response => response.json())
@@ -209,6 +224,32 @@ function displayResults(results) {
 }
 
 document.getElementById('calculate-button').addEventListener('click', () => {
+  const temperatureC = parseFloat(document.getElementById('temperature').value);
+  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
+  const pressureBar = parseFloat(document.getElementById('pressure').value);
+  const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
+  const flueGasTemperatureC = parseFloat(document.getElementById('flue-gas-temperature').value);
+  const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
   const fuelFlowRate = parseFloat(document.getElementById('fuel-flow-rate').value);
-  updateFlameVisualization(fuelFlowRate); // Update flame when calculation is triggered
+  
+  let mixture = [];
+  for (let i = 0; i < fuelCount; i++) {
+    const fuelIndex = parseInt(document.getElementById(`fuel-select-${i}`).value);
+    const percentage = parseFloat(document.getElementById(`fuel-percentage-${i}`).value);
+    mixture.push({ fuel: fuelData[fuelIndex], percentage: percentage });
+  }
+
+  const isMassFlowRate = (document.getElementById('flow-rate-label').textContent.includes('Mass'));
+
+  worker.postMessage({
+    mixture,
+    temperatureC,
+    pressureBar,
+    fuelFlowRate,
+    isMassFlowRate,
+    excessAirPercentage,
+    flueGasTemperatureC,
+    inletAirTemperatureC,
+    referenceO2
+  });
 });
