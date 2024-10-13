@@ -1,6 +1,5 @@
 // worker.js
 
-// Listen for messages from the main thread
 onmessage = function(e) {
   const {
     mixture,
@@ -41,23 +40,6 @@ onmessage = function(e) {
   }
 };
 
-/**
- * Performs combustion and cost calculations.
- * @param {Array} mixture - Array of fuel objects with their percentages.
- * @param {number} temperatureC - Ambient temperature in Celsius.
- * @param {number} inletAirTemperatureC - Inlet air temperature in Celsius.
- * @param {number} pressureBar - Atmospheric pressure in bar.
- * @param {number} fuelFlowRate - Fuel flow rate (m³/h or kg/h).
- * @param {number} excessAirPercentage - Excess air percentage.
- * @param {number} flueGasTemperatureC - Flue gas temperature in Celsius.
- * @param {number} referenceO2 - Reference O₂ percentage.
- * @param {boolean} isCostCalculationEnabled - Flag to enable cost calculations.
- * @param {number} fuelCost - Cost per m³/h or kg/h.
- * @param {number} minFlowRate - Minimum flow rate for O₂ vs CO₂ readings.
- * @param {number} maxFlowRate - Maximum flow rate for O₂ vs CO₂ readings.
- * @param {Array} combustionPoints - Array of combustion point objects with flowRate, o2, and co2.
- * @returns {Object} - Calculation results.
- */
 function performCalculations(
   mixture,
   temperatureC,
@@ -73,23 +55,15 @@ function performCalculations(
   maxFlowRate,
   combustionPoints
 ) {
-  // Constants
   const R = 8.314; // Universal gas constant J/(mol·K)
   const pressurePa = pressureBar * 1e5; // Convert bar to Pascals
   const temperatureK = temperatureC + 273.15; // Convert Celsius to Kelvin
   const inletAirTempK = inletAirTemperatureC + 273.15;
 
-  // Determine flow rate unit based on fuel types
-  let flowRateUnit = 'm³/h';
-  const containsSolidOrLiquid = mixture.some(fuelObj => fuelObj.fuel.Type === 'Solid' || fuelObj.fuel.Type === 'Liquid');
-  if (containsSolidOrLiquid) {
-    flowRateUnit = 'kg/h';
-  }
-
-  // Calculate average properties of the fuel mixture
-  let totalMolarMass = 0; // g/mol
-  let totalLHV = 0; // MJ/kg
-  let totalHHV = 0; // MJ/kg
+  // Initialize variables for total properties
+  let totalMolarMass = 0;
+  let totalLHV = 0;
+  let totalHHV = 0;
 
   mixture.forEach(component => {
     const fuel = component.fuel;
@@ -99,109 +73,100 @@ function performCalculations(
     totalHHV += fuel.HHV * (percentage / 100);
   });
 
-  // Calculate molar flow rate of fuel
-  // If volumetric, assume a density or convert as necessary (simplified here)
-  // For mass flow rate, convert to molar flow rate
-  let nFuel = 0; // mol/h
-  if (flowRateUnit === 'm³/h') {
-    // Placeholder: Assume density of fuel is 1 kg/m³ for gases (simplification)
-    const density = 1; // kg/m³ (This should be adjusted based on actual fuel density)
-    const massFlowRate = fuelFlowRate * density; // kg/h
-    nFuel = massFlowRate / (totalMolarMass / 1000); // mol/h
+  // Use Ideal Gas Law to calculate the fuel gas density:
+  const gasDensity = (pressurePa * totalMolarMass) / (R * temperatureK);
+
+  // Molar flow rate (mol/s)
+  let nFuel = 0;
+  if (mixture.some(fuel => fuel.fuel.Type === 'Solid' || fuel.fuel.Type === 'Liquid')) {
+    // If solid or liquid, use mass flow rate (kg/h)
+    nFuel = fuelFlowRate / (totalMolarMass / 1000);
   } else {
-    // kg/h to mol/h
-    nFuel = fuelFlowRate / (totalMolarMass / 1000); // mol/h
+    // Otherwise, use volumetric flow rate (m³/h)
+    nFuel = (fuelFlowRate * gasDensity) / (totalMolarMass / 1000);
   }
-  const nFuelPerSecond = nFuel / 3600; // mol/s
+  const nFuelPerSecond = nFuel / 3600;
 
-  // Calculate stoichiometric O2 required
-  // Assuming complete combustion: C + O2 -> CO2, H2 + 0.5O2 -> H2O
-  let stoichO2 = 0; // mol O2 per mol fuel
+  let stoichO2 = 0;
   mixture.forEach(component => {
     const fuel = component.fuel;
     const percentage = component.percentage;
-    const fuelFraction = percentage / 100;
-    stoichO2 += (fuel.C + fuel.H / 4) * fuelFraction;
+    stoichO2 += (fuel.C + fuel.H / 4) * (percentage / 100);
   });
 
-  // Total O2 required with excess air
-  const totalO2Required = stoichO2 * (1 + excessAirPercentage / 100); // mol O2 per mol fuel
+  // Total O₂ required for stoichiometric combustion and considering excess air
+  const totalO2Required = stoichO2 * (1 + excessAirPercentage / 100);
 
-  // Molar flow rate of air (assuming air is 21% O2 and 79% N2)
-  const nAirO2 = totalO2Required * nFuel; // mol/h
-  const nAirN2 = nAirO2 * (79 / 21); // mol/h
-  const nAir = nAirO2 + nAirN2; // mol/h
-  const nAirPerSecond = nAir / 3600; // mol/s
+  const nAirO2 = totalO2Required * nFuel;
+  const nAirN2 = nAirO2 * (79 / 21);
+  const nAir = nAirO2 + nAirN2;
+  const nAirPerSecond = nAir / 3600;
 
-  // Calculate flow rate of air (m³/h) using ideal gas law
-  const airFlowRate = (nAirPerSecond * R * temperatureK) / pressurePa; // m³/s
-  const airFlowRateM3h = airFlowRate * 3600; // m³/h
+  const airFlowRate = (nAirPerSecond * R * temperatureK) / pressurePa;
+  const airFlowRateM3h = airFlowRate * 3600;
 
-  // Calculate stoichiometric CO2 production
-  let stoichCO2 = 0; // mol CO2 per mol fuel
+  // Max stoichiometric CO₂
+  let stoichCO2 = 0;
   mixture.forEach(component => {
     const fuel = component.fuel;
     const percentage = component.percentage;
-    const fuelFraction = percentage / 100;
-    stoichCO2 += fuel.C * fuelFraction; // mol CO2 per mol fuel
+    stoichCO2 += fuel.C * (percentage / 100);
   });
 
-  // Initialize variables for aggregation
+  // Wet and Dry Gas Volume Percentages
+  const nH2O = (stoichCO2 * 2) * nFuel; // Assuming complete combustion of hydrocarbons
+  const totalMolesWet = nFuel + nAir + nH2O;
+  const totalMolesDry = totalMolesWet - nH2O; // Dry removes H2O
+
+  const wetBasis = {
+    CO2: (stoichCO2 / totalMolesWet) * 100,
+    H2O: (nH2O / totalMolesWet) * 100,
+    O2: (nAirO2 / totalMolesWet) * 100,
+    N2: (nAirN2 / totalMolesWet) * 100
+  };
+
+  const dryBasis = {
+    CO2: (stoichCO2 / totalMolesDry) * 100,
+    O2: (nAirO2 / totalMolesDry) * 100,
+    N2: (nAirN2 / totalMolesDry) * 100
+  };
+
+  // Flame temperature calculation using energy balance
+  const Cp_products = 37; // Average specific heat capacity for products in J/(mol·K)
+  const heatReleased = nFuelPerSecond * totalLHV * 1e6; // Convert MJ/kg to J/mol
+  const deltaT = heatReleased / (totalMolesWet * Cp_products);
+  const flameTemperatureK = temperatureK + deltaT;
+
+  // NOx calculation
+  const A = 1e-5;
+  const B = 0.0006;
+  const C = 0.5;
+  const NOx_ppm = A * Math.exp(B * (flameTemperatureK - 2000)) * Math.pow((wetBasis.O2 + 1), C) * 1e6;
+
+  // Updated cost saving and efficiency calculations across 10 combustion points
   let totalEfficiency = 0;
   let totalCostSavings = 0;
   let costAnalysis = '';
 
-  // Validate that there are exactly 10 combustion points
   if (combustionPoints.length !== 10) {
     throw new Error('Exactly 10 combustion points must be provided.');
   }
 
-  // Process each combustion point
   combustionPoints.forEach((point, index) => {
     const { flowRate, o2, co2 } = point;
 
-    // Calculate molar flow rate of fuel at this point
-    let nFuelPoint = 0; // mol/h
-    if (flowRateUnit === 'm³/h') {
-      const density = 1; // kg/m³ (Adjust as needed)
-      const massFlowRate = flowRate * density; // kg/h
-      nFuelPoint = massFlowRate / (totalMolarMass / 1000); // mol/h
-    } else {
-      nFuelPoint = flowRate / (totalMolarMass / 1000); // mol/h
-    }
-    const nFuelPointPerSecond = nFuelPoint / 3600; // mol/s
+    let nFuelPoint = flowRate / (totalMolarMass / 1000);
+    const stoichO2Point = stoichO2 * nFuelPoint;
 
-    // Calculate stoichiometric O2 and air for this flow rate
-    const stoichO2Point = stoichO2 * nFuelPoint; // mol O2
-    const nAirO2Point = stoichO2Point * (1 + excessAirPercentage / 100); // mol O2
-    const nAirN2Point = nAirO2Point * (79 / 21); // mol N2
-    const nAirPoint = nAirO2Point + nAirN2Point; // mol/h
-    const nAirPointPerSecond = nAirPoint / 3600; // mol/s
-
-    // Total flue gas molar flow rate
-    const nTotalFlueGas = nFuelPointPerSecond + nAirPointPerSecond; // mol/s
-
-    // Calculate actual CO2 production based on percentage
-    const nCO2_measured = (co2 / 100) * nTotalFlueGas; // mol/s
-
-    // Combustion Efficiency
-    const stoichCO2_flowRate = stoichCO2 * (flowRate / fuelFlowRate); // mol/s
-    const combustionEfficiency = (nCO2_measured / stoichCO2_flowRate) * 100; // %
-
-    // Aggregate efficiency
+    const combustionEfficiency = (co2 / stoichCO2) * 100; // CO₂-based efficiency
     totalEfficiency += combustionEfficiency;
 
-    // Cost Calculations
     let costAtPoint = 0;
     if (isCostCalculationEnabled) {
-      // Cost is proportional to flow rate and inversely proportional to efficiency
-      // Simplified calculation: (flowRate / efficiency) * fuelCost
       costAtPoint = (flowRate / combustionEfficiency) * fuelCost;
-      totalCostSavings += costAtPoint; // Assuming operational hours are accounted for elsewhere
-
-      // Append to cost analysis
+      totalCostSavings += costAtPoint;
       costAnalysis += `Point ${index + 1}:\n` +
-                     `  Flow Rate: ${flowRate.toFixed(2)} ${flowRateUnit}\n` +
+                     `  Flow Rate: ${flowRate.toFixed(2)} m³/h\n` +
                      `  O₂ Reading: ${o2.toFixed(2)}%\n` +
                      `  CO₂ Reading: ${co2.toFixed(2)}%\n` +
                      `  Combustion Efficiency: ${combustionEfficiency.toFixed(2)}%\n` +
@@ -209,69 +174,34 @@ function performCalculations(
     }
   });
 
-  // Average Combustion Efficiency
-  const averageEfficiency = combustionPoints.length > 0 ? (totalEfficiency / combustionPoints.length) : 0;
+  const averageEfficiency = totalEfficiency / combustionPoints.length;
 
-  // Aggregate Cost Analysis
   if (isCostCalculationEnabled) {
-    // Assuming operational hours, e.g., 40 hours/week
-    const operationalHours = 40;
+    const operationalHours = 40; // Assume 40 hours of operation per week
     const weeklyCostSavings = totalCostSavings * operationalHours;
     costAnalysis += `Total Weekly Cost Savings: $${weeklyCostSavings.toFixed(2)}`;
   }
 
-  // Prepare emission calculations (simplified placeholders)
-  // In real scenarios, emissions should be calculated based on fuel composition and combustion efficiency
-  const nCO2 = stoichCO2 * (fuelFlowRate / fuelFlowRate) / 3600; // mol/s (normalized)
-  const nH2O = (stoichCO2 * 2) * (fuelFlowRate / fuelFlowRate) / 3600; // mol/s
-  const nSO2 = 0; // Placeholder
-  const nCO = 0; // Placeholder
-  const nUnburnedH2 = 0; // Placeholder
-  const nO2Excess = ((nAirPerSecond * 0.21) - stoichO2) / 3600; // mol/s (simplified)
-  const nN2 = (nAirPerSecond * 0.79).toFixed(4); // mol/s
-  const nNOx = 0; // Placeholder
-  const nAsh = 0; // Placeholder
-  const SOx_ppm = 0; // Placeholder
-  const NOx_ppm = 0; // Placeholder
-  const NOx_normalized = 0; // Placeholder
-  const NOx_flue_gas_temp = 0; // Placeholder
-  const NOx_corrected_O2_normalized = 0; // Placeholder
-  const NOx_corrected_O2_actual = 0; // Placeholder
-
-  // Prepare final results object
   const results = {
-    totalMolarMass: parseFloat(totalMolarMass.toFixed(2)), // g/mol
-    totalLHV: parseFloat(totalLHV.toFixed(2)), // MJ/kg
-    totalHHV: parseFloat(totalHHV.toFixed(2)), // MJ/kg
-    nFuel: parseFloat(nFuelPerSecond.toFixed(4)), // mol/s
-    nAir: parseFloat(nAirPerSecond.toFixed(4)), // mol/s
-    airFlowRate: parseFloat(airFlowRateM3h.toFixed(2)), // m³/h
-    flowRateUnit: flowRateUnit,
-    combustionEfficiency: parseFloat(averageEfficiency.toFixed(2)), // %
-    flameTemperatureK: flueGasTemperatureC + 273.15, // K
-    fuelGasDensity: parseFloat((fuelFlowRate / airFlowRateM3h).toFixed(4)), // kg/m³ (simplified)
-    // Emissions (placeholders)
-    nCO2: parseFloat(nCO2.toFixed(4)), // mol/s
-    nH2O: parseFloat(nH2O.toFixed(4)), // mol/s
-    nSO2: nSO2,
-    nCO: nCO,
-    nUnburnedH2: nUnburnedH2,
-    nO2Excess: parseFloat(nO2Excess.toFixed(4)), // mol/s
-    nN2: parseFloat(nN2), // mol/s
-    nNOx: nNOx,
-    nAsh: nAsh,
-    SOx_ppm: SOx_ppm,
-    NOx_ppm: NOx_ppm,
-    NOx_normalized: NOx_normalized,
-    NOx_flue_gas_temp: NOx_flue_gas_temp,
-    NOx_corrected_O2_normalized: NOx_corrected_O2_normalized,
-    NOx_corrected_O2_actual: NOx_corrected_O2_actual,
+    totalMolarMass: parseFloat(totalMolarMass.toFixed(2)),
+    totalLHV: parseFloat(totalLHV.toFixed(2)),
+    totalHHV: parseFloat(totalHHV.toFixed(2)),
+    nFuel: parseFloat(nFuelPerSecond.toFixed(4)),
+    nAir: parseFloat(nAirPerSecond.toFixed(4)),
+    airFlowRate: parseFloat(airFlowRateM3h.toFixed(2)),
+    flowRateUnit: 'm³/h',
+    combustionEfficiency: parseFloat(averageEfficiency.toFixed(2)),
+    fuelGasDensity: parseFloat(gasDensity.toFixed(4)),
+    flameTemperatureK: parseFloat(flameTemperatureK.toFixed(2)),
+    NOx_ppm: parseFloat(NOx_ppm.toFixed(2)),
+    wetBasis,
+    dryBasis,
     combustionPoints: combustionPoints.map(point => ({
       flowRate: point.flowRate,
       o2: point.o2,
       co2: point.co2,
-      efficiency: parseFloat(((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100).toFixed(2)),
-      cost: isCostCalculationEnabled ? parseFloat(((point.flowRate / ((point.co2 / (stoichCO2 * (point.flowRate / fuelFlowRate))) * 100)) * fuelCost).toFixed(2)) : 'N/A'
+      efficiency: parseFloat(((point.co2 / stoichCO2) * 100).toFixed(2)),
+      cost: isCostCalculationEnabled ? parseFloat(((point.flowRate / ((point.co2 / stoichCO2) * 100)) * fuelCost).toFixed(2)) : 'N/A'
     })),
     costAnalysis: isCostCalculationEnabled ? costAnalysis : 'Fuel cost calculations are disabled.'
   };
