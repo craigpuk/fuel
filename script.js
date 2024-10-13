@@ -8,14 +8,19 @@ let worker;
 
 // Fetch predefined fuels from fuel_data.json
 fetch('fuel_data.json')
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok.');
+    }
+    return response.json();
+  })
   .then(data => {
     fuelData = data.filter(fuel => fuel.Name !== "Custom Fuel"); // Exclude the placeholder
     initializeFuelSelection();
   })
   .catch(error => {
     console.error('Error loading fuel data:', error);
-    alert('Failed to load fuel data.');
+    alert('Failed to load fuel data. Please ensure fuel_data.json is correctly placed and served via a local server.');
   });
 
 // Initialize the fuel selection UI
@@ -125,7 +130,13 @@ function setupCustomFuelForm() {
     saveCustomFuel();
   });
 
-  document.querySelector('.close-button')?.addEventListener('click', hideCustomFuelForm);
+  // Close modal when clicking the close button
+  const closeButton = document.querySelector('.close-button');
+  if (closeButton) {
+    closeButton.addEventListener('click', hideCustomFuelForm);
+  }
+
+  // Close modal when clicking the cancel button
   document.getElementById('cancel-custom-fuel-button').addEventListener('click', hideCustomFuelForm);
 }
 
@@ -430,6 +441,10 @@ function performCalculation() {
       const results = e.data;
       if (results.error) {
         alert(`Error: ${results.error}`);
+        // Re-enable the calculate button
+        const calculateButton = document.getElementById('calculate-button');
+        calculateButton.disabled = false;
+        calculateButton.textContent = 'Calculate';
         return;
       }
       displayResults(results);
@@ -437,6 +452,10 @@ function performCalculation() {
     worker.onerror = function(error) {
       console.error('Worker error:', error);
       alert('An error occurred during calculations.');
+      // Re-enable the calculate button
+      const calculateButton = document.getElementById('calculate-button');
+      calculateButton.disabled = false;
+      calculateButton.textContent = 'Calculate';
     };
   }
 
@@ -447,9 +466,6 @@ function performCalculation() {
 
   // Send data to the worker
   worker.postMessage(dataToSend);
-
-  // Re-enable the calculate button after some time (worker will handle response)
-  // Alternatively, you can re-enable it in the worker's onmessage handler
 }
 
 // Display the calculation results
@@ -465,14 +481,14 @@ Point ${index + 1}:
   Flow Rate: ${point.flowRate.toFixed(2)} ${results.flowRateUnit}
   O₂ Reading: ${point.o2.toFixed(2)}%
   CO₂ Reading: ${point.co2.toFixed(2)}%
-  Efficiency: ${point.efficiency.toFixed(2)}%
-  Cost at Point: $${point.cost.toFixed(2)}
+  Combustion Efficiency: ${point.efficiency}% 
+  Cost at Point: $${point.cost}
 `).join('\n')}
 
 === Fuel Cost Analysis ===
 ${results.costAnalysis}
 `;
-  
+
   // Re-enable the calculate button
   const calculateButton = document.getElementById('calculate-button');
   calculateButton.disabled = false;
