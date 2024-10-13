@@ -151,9 +151,17 @@ function performCalculations(
   const actualCO2 = stoichiometricCO2 / (1 + excessAirFraction);
   const combustionEfficiency = (actualCO2 / stoichiometricCO2) * 100;
 
+  // Wet and dry CO2
+  const dryCO2 = actualCO2 / (1 + H2O_fromCombustion(mixture, excessAirFraction));
+  const wetCO2 = actualCO2;
+
   const combustionEfficiencyFraction = combustionEfficiency / 100;
   const nFuelCombusted = nFuel * combustionEfficiencyFraction;
-  const nUnburnedFuel = nFuel - nFuelCombusted;
+
+  // Pollutant calculations (NOx, SOx, CO) - Estimations
+  const NOx = calculateNOx(nFuelCombusted, temperatureK);
+  const SOx = calculateSOx(mixture, nFuelCombusted);
+  const CO = calculateCO(nFuelCombusted, excessAirFraction, temperatureK);
 
   const flameTemperatureK = calculateFlameTemperature(temperatureK, nFuelCombusted, nAir, totalLHV);
 
@@ -168,10 +176,46 @@ function performCalculations(
     combustionEfficiency,
     flameTemperatureK,
     stoichiometricCO2,
-    actualCO2
+    actualCO2,
+    dryCO2,
+    wetCO2,
+    NOx,
+    SOx,
+    CO
   };
 
   return results;
+}
+
+// Calculate H2O formed from combustion of H and excess air
+function H2O_fromCombustion(mixture, excessAirFraction) {
+  let H2O = 0;
+  mixture.forEach((component) => {
+    const H = (component.fuel.H || 0);
+    H2O += component.percentage / 100 * H * (1 / 2);
+  });
+  return H2O / (1 + excessAirFraction);
+}
+
+// Calculate NOx (simplified approach based on temperature zones)
+function calculateNOx(nFuelCombusted, temperatureK) {
+  const NOxFormationFactor = 0.00002; // Arbitrary NOx formation factor
+  return NOxFormationFactor * nFuelCombusted * Math.exp(-3000 / temperatureK); // Simplified temperature dependence
+}
+
+// Calculate SOx (based on sulfur content in the fuel)
+function calculateSOx(mixture, nFuelCombusted) {
+  let totalSulfur = 0;
+  mixture.forEach(component => {
+    totalSulfur += component.percentage / 100 * (component.fuel.S || 0);
+  });
+  return totalSulfur * nFuelCombusted; // All sulfur assumed to convert to SOx
+}
+
+// Calculate CO (based on incomplete combustion)
+function calculateCO(nFuelCombusted, excessAirFraction, temperatureK) {
+  const incompleteCombustionFactor = 0.01; // Arbitrary factor
+  return incompleteCombustionFactor * nFuelCombusted * (1 / (1 + excessAirFraction)) * Math.exp(-2000 / temperatureK);
 }
 
 // Flame temperature calculation
