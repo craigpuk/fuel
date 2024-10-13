@@ -4,6 +4,7 @@ let fuelData = [];
 let fuelCount = 0;
 let worker;
 
+// Fetch fuel data from JSON file
 fetch('fuel_data.json')
   .then(response => response.json())
   .then(data => {
@@ -15,11 +16,13 @@ fetch('fuel_data.json')
     alert('Failed to load fuel data.');
   });
 
+// Initialize fuel selection
 function initializeFuelSelection() {
   document.getElementById('add-fuel-button').addEventListener('click', addFuel);
-  addFuel();
+  addFuel(); // Add the first fuel selection
 }
 
+// Add a new fuel selection row
 function addFuel() {
   const fuelList = document.getElementById('fuel-list');
   const fuelItem = document.createElement('div');
@@ -31,7 +34,7 @@ function addFuel() {
   fuelData.forEach((fuel, index) => {
     const option = document.createElement('option');
     option.value = index;
-    option.text = `${fuel.Name} (${fuel.Type})`;
+    option.text = `${fuel.Name} (${fuel.Symbol})`;
     fuelSelect.appendChild(option);
   });
 
@@ -60,6 +63,7 @@ function addFuel() {
   updateFlowRateLabel();
 }
 
+// Update flow rate label based on fuel types selected
 function updateFlowRateLabel() {
   const flowRateLabel = document.getElementById('flow-rate-label');
   const fuelFlowRateInput = document.getElementById('fuel-flow-rate');
@@ -86,9 +90,12 @@ function updateFlowRateLabel() {
   }
 }
 
+// Event listener for the Calculate button
 document.getElementById('calculate-button').addEventListener('click', calculateCombustion);
 
+// Main calculation function
 function calculateCombustion() {
+  // Get fuel mixture
   let mixture = [];
   let totalPercentage = 0;
   for (let i = 0; i < fuelCount; i++) {
@@ -112,8 +119,10 @@ function calculateCombustion() {
     return;
   }
 
-  let containsSolidFuel = mixture.some(component => component.fuel.Type === 'Solid');
+  // Check if the mixture contains solid or liquid fuel
+  let containsSolidFuel = mixture.some(component => component.fuel.Type === 'Solid' || component.fuel.Type === 'Liquid');
 
+  // Get combustion variables
   const temperatureC = parseFloat(document.getElementById('temperature').value);
   const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
   const pressureBar = parseFloat(document.getElementById('pressure').value);
@@ -129,28 +138,60 @@ function calculateCombustion() {
     return;
   }
 
+  // Get fuel flow rate
   const fuelFlowRate = parseFloat(document.getElementById('fuel-flow-rate').value);
   if (isNaN(fuelFlowRate) || fuelFlowRate <= 0) {
     alert('Please enter a valid fuel flow rate.');
     return;
   }
 
+  // Determine if flow rate is mass or volumetric
   const isMassFlowRate = containsSolidFuel;
+
+  // Disable the Calculate button
   document.getElementById('calculate-button').disabled = true;
   document.getElementById('calculate-button').textContent = 'Calculating...';
 
+  // Get the min and max flow rates for the 10 combustion points
   const minFlowRate = parseFloat(document.getElementById('min-flow-rate').value);
   const maxFlowRate = parseFloat(document.getElementById('max-flow-rate').value);
 
+  if (isNaN(minFlowRate) || isNaN(maxFlowRate) || minFlowRate <= 0 || maxFlowRate <= 0) {
+    alert('Please enter valid min and max flow rates.');
+    document.getElementById('calculate-button').disabled = false;
+    document.getElementById('calculate-button').textContent = 'Calculate';
+    return;
+  }
+
+  // Collect O₂ and CO₂ readings for 10 combustion points
   let combustionPoints = [];
   for (let i = 0; i < 10; i++) {
+    const o2Input = document.getElementById(`o2-${i}`);
+    const co2Input = document.getElementById(`co2-${i}`);
+    if (!o2Input || !co2Input) {
+      alert(`Missing O₂ or CO₂ input for point ${i + 1}.`);
+      document.getElementById('calculate-button').disabled = false;
+      document.getElementById('calculate-button').textContent = 'Calculate';
+      return;
+    }
+
     const flowRate = minFlowRate + i * ((maxFlowRate - minFlowRate) / 9);
-    const o2 = parseFloat(document.getElementById(`o2-${i}`).value);
-    const co2 = parseFloat(document.getElementById(`co2-${i}`).value);
+    const o2 = parseFloat(o2Input.value);
+    const co2 = parseFloat(co2Input.value);
+
+    if (isNaN(o2) || isNaN(co2) || o2 < 0 || co2 < 0) {
+      alert(`Please enter valid O₂ and CO₂ readings for point ${i + 1}.`);
+      document.getElementById('calculate-button').disabled = false;
+      document.getElementById('calculate-button').textContent = 'Calculate';
+      return;
+    }
+
     combustionPoints.push({ flowRate, o2, co2 });
   }
 
+  // Initialize the worker and start calculations
   worker = new Worker('worker.js');
+
   worker.onmessage = function(e) {
     const results = e.data;
     if (results.error) {
@@ -172,6 +213,7 @@ function calculateCombustion() {
     document.getElementById('calculate-button').textContent = 'Calculate';
   };
 
+  // Send data to the worker
   worker.postMessage({
     mixture,
     temperatureC,
@@ -189,6 +231,7 @@ function calculateCombustion() {
   });
 }
 
+// Display results in the output area
 function displayResults(results) {
   const output = document.getElementById('output');
   output.textContent = `
