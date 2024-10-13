@@ -260,7 +260,7 @@ Molar Flow Rate of Fuel: ${results.nFuel.toFixed(4)} mol/s<br>
 Molar Flow Rate of Air Required: ${results.nAir.toFixed(4)} mol/s<br>
 Required Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}<br>
 Combustion Efficiency: ${results.combustionEfficiency.toFixed(2)}%<br>
-Flame Temperature: ${(results.combustionResults.flameTemperatureK - 273.15).toFixed(2)} °C<br>
+Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C<br>
 Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³<br><br>
 
 === Combustion Products ===<br>
