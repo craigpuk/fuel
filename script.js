@@ -180,51 +180,27 @@ function drawFlame(length, width) {
 }
 
 function updateFlameVisualization(flowRate) {
-  const flameLength = Math.sqrt(flowRate) * 2; 
-  const flameWidth = Math.sqrt(flowRate) * 1.2;
+  const flameLength = Math.sqrt(flowRate) * 0.5; // Adjusted flame scaling
+  const flameWidth = flameLength * 0.6; // Adjust width-to-length ratio
   drawFlame(flameLength, flameWidth);
 }
 
-// Toggle detailed calculations section
-document.getElementById('toggle-details').addEventListener('click', () => {
-  const detailsContent = document.getElementById('details-content');
-  if (detailsContent.style.display === 'none') {
-    detailsContent.style.display = 'block';
-    document.getElementById('toggle-details').textContent = 'Info -';
-  } else {
-    detailsContent.style.display = 'none';
-    document.getElementById('toggle-details').textContent = 'Info +';
-  }
-});
-
-// Populate detailed calculation info
-function populateCalculationDetails(results) {
-  const detailsContent = document.getElementById('details-content');
-  detailsContent.innerHTML = `
-    <h4>Step-by-Step Calculations</h4>
-    <p><strong>Stoichiometric CO₂:</strong> ${results.stoichiometricCO2.toFixed(2)}%</p>
-    <p><strong>Actual CO₂:</strong> ${results.actualCO2.toFixed(2)}%</p>
-    <p><strong>Dry CO₂:</strong> ${results.dryCO2.toFixed(2)}%</p>
-    <p><strong>Wet CO₂:</strong> ${results.wetCO2.toFixed(2)}%</p>
-    <p><strong>NOx Emission:</strong> ${results.NOx.toFixed(2)} ppm</p>
-    <p><strong>SOx Emission:</strong> ${results.SOx.toFixed(2)} ppm</p>
-    <p><strong>CO Emission:</strong> ${results.CO.toFixed(2)} ppm</p>
-    <p><strong>Air Flow Rate:</strong> ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}</p>
-    <p><strong>Molar Flow Rate of Fuel:</strong> ${results.nFuel.toFixed(4)} mol/s</p>
-    <p><strong>Flame Temperature:</strong> ${(results.flameTemperatureK - 273.15).toFixed(2)} °C</p>
-  `;
-}
-
-// Example of displayResults
+// Display results in the results section
 function displayResults(results) {
   const output = document.getElementById('output');
   output.textContent = `
     Average Molar Weight of Fuel Mixture: ${results.totalMolarMass.toFixed(2)} g/mol
     Lower Heating Value (LHV): ${results.totalLHV.toFixed(2)} MJ/kg
     Combustion Efficiency: ${results.combustionEfficiency.toFixed(2)}%
+    Wet CO₂: ${results.wetCO2.toFixed(2)}%
+    Dry CO₂: ${results.dryCO2.toFixed(2)}%
+    NOx Emission: ${results.NOx.toFixed(2)} ppm
+    SOx Emission: ${results.SOx.toFixed(2)} ppm
+    CO Emission: ${results.CO.toFixed(2)} ppm
+    Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}
+    Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C
   `;
-  populateCalculationDetails(results);
-  updateFlameVisualization(results.fuelFlowRate); // Update flame visualization
+  updateFlameVisualization(results.nFuel); // Update flame visualization
 }
 
 document.getElementById('calculate-button').addEventListener('click', () => {
