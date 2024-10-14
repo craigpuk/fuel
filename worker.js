@@ -14,8 +14,7 @@ function calculateGasDensity(pressureBar, molarMassG, temperatureC) {
 
 // Function to calculate humidity ratio based on air humidity percentage
 function calculateHumidityRatio(airHumidity, temperatureC, pressureBar) {
-  // Simplified estimation using the Antoine equation for saturation vapor pressure of water
-  // Antoine constants for water (valid for 1°C to 100°C)
+  // Antoine equation constants for water (valid for 1°C to 100°C)
   const A = 8.07131;
   const B = 1730.63;
   const C = 233.426;
@@ -60,19 +59,22 @@ function performCalculations(data) {
       throw new Error('Mixed fuel types detected. Only fuels of the same type (Gas, Liquid, or Solid) can be processed together.');
     }
 
-    // Calculate overall LHV and HHV as weighted averages based on mass fractions
-    let totalMass = 0;
+    // Ensure total percentage sums to 100%
+    let totalPercentage = 0;
     mixture.forEach(component => {
-      const massFraction = component.percentage / 100;
-      totalMass += massFraction;
+      totalPercentage += component.percentage;
     });
+    if (Math.abs(totalPercentage - 100) > 0.01) {
+      throw new Error('Total fuel percentages must sum up to 100%.');
+    }
 
+    // Calculate overall LHV and HHV as weighted averages based on mass fractions
     let totalLHV = 0;
     let totalHHV = 0;
     mixture.forEach(component => {
       const massFraction = component.percentage / 100;
-      totalLHV += massFraction * component.fuel.LoweringHeatingValue;
-      totalHHV += massFraction * component.fuel.HeatingValue;
+      totalLHV += massFraction * component.fuel.HeatingValue; // Using 'HeatingValue' as LHV
+      totalHHV += massFraction * component.fuel.HHV;
     });
 
     // Calculate average molar mass of the fuel mixture
@@ -95,21 +97,22 @@ function performCalculations(data) {
     // Calculate humidity ratio
     const humidityRatio = calculateHumidityRatio(airHumidity, inletAirTemperatureC, pressureBar);
 
-    // Calculate stoichiometric air required (simplified for CH4)
-    // For general fuels, this should be adjusted based on elemental composition
-    // Here, we assume complete combustion: CH4 + 2(O2 + 3.76N2) → CO2 + 2H2O + 7.52N2
+    // Calculate stoichiometric air required (for complete combustion)
+    // For each fuel component: stoichAir += (C + H/4) mol O2 per mol fuel
     let stoichAir = 0;
     mixture.forEach(component => {
       const fuel = component.fuel;
-      // Stoichiometric O2 required per mole of fuel (simplified)
-      // Adjust based on fuel composition: C + (H/4) = moles of O2 required
-      stoichAir += (fuel.C + (fuel.H / 4)) * 1; // moles O2 per mole fuel
+      stoichAir += (fuel.C + fuel.H / 4); // mol O2 per mol fuel
     });
 
     // Adjust for excess air
-    const totalAir = stoichAir * (1 + excessAirPercentage / 100);
+    const totalO2Required = stoichAir * (1 + excessAirPercentage / 100); // mol O2/s
 
-    // Calculate molar flow rates
+    // Air has 21% O2 by mole
+    const O2_fraction = 0.21;
+    const nAir = totalO2Required / O2_fraction; // mol/s
+
+    // Calculate molar flow rate of fuel
     let nFuel = 0;
     mixture.forEach(component => {
       const fuel = component.fuel;
@@ -126,23 +129,27 @@ function performCalculations(data) {
     });
     nFuel = nFuel / 3600; // Convert to mol/s
 
-    const nAir = totalAir / 3600; // mol/s
-
-    // Combustion products (simplified)
-    const nCO2 = nFuel * 1; // mol/s (assuming C fully converts to CO2)
-    const nH2O = nFuel * 2; // mol/s (assuming H fully converts to H2O)
-    const nSO2 = 0; // Assuming no sulfur in methane or fuels
+    // Combustion products (assuming complete combustion)
+    const nCO2 = nFuel * 1; // mol/s (1 mol CO2 per mol fuel)
+    const nH2O = nFuel * 2; // mol/s (2 mol H2O per mol fuel)
+    const nSO2 = 0; // Assuming no sulfur in most fuels
     const nUnburnedH2 = 0; // Assuming complete combustion
-    const nO2Excess = nAir - (nFuel * 1 + nFuel * 2); // mol/s
-    const nN2 = nAir * 3.76; // mol/s
+    const nO2Excess = (nAir * O2_fraction) - stoichAir * 1; // mol/s
+    const nN2 = nAir * (1 - O2_fraction) * 3.76; // mol/s
     const nNOx = 1e-4; // Placeholder value (needs accurate calculation)
-    const nAsh = 0; // Assuming no ash for methane
+    const nAsh = 0; // Assuming no ash for gaseous fuels
 
     // Flame temperature calculation (simplified)
     const flameTemperatureK = flueGasTemperatureC + 273.15;
 
-    // Calculate SOx emissions (assuming no sulfur in methane)
+    // Calculate SOx emissions (assuming no sulfur in most fuels)
     const SOx_ppm = 0;
+
+    // Calculate Air Flow Rate (m³/h) using Ideal Gas Law
+    const airTemperatureK = inletAirTemperatureC + 273.15;
+    const airPressurePa = pressureBar * 100000; // bar to Pa
+    const airDensity = (airPressurePa * 0.02897) / (R * airTemperatureK); // kg/m³ (using average molar mass of air: 28.97 g/mol)
+    const airFlowRate_m3h = (nAir * R * airTemperatureK) / airPressurePa * 3600; // m³/h
 
     // Volume Percentages (Wet Basis)
     const totalMolesWet = nCO2 + nH2O + nSO2 + nUnburnedH2 + nO2Excess + nN2 + nNOx + nAsh;
@@ -178,31 +185,31 @@ function performCalculations(data) {
 
     // Compile results
     const results = {
-      totalMolarMass: totalMolarMass,
-      totalLHV: totalLHV,
-      totalHHV: totalHHV,
-      nFuel: nFuel,
-      nAir: nAir,
-      airFlowRate: totalAir, // mol/s
+      totalMolarMass: totalMolarMass, // g/mol
+      totalLHV: totalLHV, // MJ/kg
+      totalHHV: totalHHV, // MJ/kg
+      nFuel: nFuel, // mol/s
+      nAir: nAir, // mol/s
+      airFlowRate_m3h: airFlowRate_m3h, // m³/h
       flowRateUnit: isMassFlowRate ? 'kg/h' : 'm³/h',
-      flameTemperatureK: flameTemperatureK,
-      fuelGasDensity: fuelGasDensity,
-      nCO2: nCO2,
-      nH2O: nH2O,
-      nSO2: nSO2,
-      nUnburnedH2: nUnburnedH2,
-      nO2Excess: nO2Excess,
-      nN2: nN2,
-      nNOx: nNOx,
-      nAsh: nAsh,
-      SOx_ppm: SOx_ppm,
-      volumePercentagesWet: volumePercentagesWet,
-      volumePercentagesDry: volumePercentagesDry,
-      NOx_ppm: NOx_ppm,
-      NOx_normalized: NOx_normalized,
-      NOx_flue_gas_temp: NOx_flue_gas_temp,
-      NOx_corrected_O2_normalized: NOx_corrected_O2_normalized,
-      NOx_corrected_O2_actual: NOx_corrected_O2_actual,
+      flameTemperatureK: flameTemperatureK, // K
+      fuelGasDensity: fuelGasDensity, // kg/m³
+      nCO2: nCO2, // mol/s
+      nH2O: nH2O, // mol/s
+      nSO2: nSO2, // mol/s
+      nUnburnedH2: nUnburnedH2, // mol/s
+      nO2Excess: nO2Excess, // mol/s
+      nN2: nN2, // mol/s
+      nNOx: nNOx, // mol/s
+      nAsh: nAsh, // mol/s
+      SOx_ppm: SOx_ppm, // ppm
+      volumePercentagesWet: volumePercentagesWet, // %
+      volumePercentagesDry: volumePercentagesDry, // %
+      NOx_ppm: NOx_ppm, // ppm
+      NOx_normalized: NOx_normalized, // mg/Nm³
+      NOx_flue_gas_temp: NOx_flue_gas_temp, // mg/Am³
+      NOx_corrected_O2_normalized: NOx_corrected_O2_normalized, // mg/Nm³
+      NOx_corrected_O2_actual: NOx_corrected_O2_actual, // mg/Am³
       CO_ppm: 0.00 // Placeholder since CO calculations are removed
     };
 
