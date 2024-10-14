@@ -35,7 +35,7 @@ function addFuel() {
   fuelData.forEach((fuel, index) => {
     const option = document.createElement('option');
     option.value = index;
-    option.text = `${fuel.Name} (${fuel.Type})`;
+    option.text = `${fuel.Name} ${fuel.Formula} (${fuel.Type})`;
     fuelSelect.appendChild(option);
   });
 
