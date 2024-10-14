@@ -243,11 +243,12 @@ NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed
 - CO ppm represents carbon monoxide emissions from incomplete combustion.
 - Other sources of CO (e.g., boiler walls) are not accounted for in this calculator.
 - Ensure proper maintenance and operation of combustion systems to minimize CO emissions.
-  `;
-    
-    // Combine selected fuels and main results
-    output.textContent = `${selectedFuels}${mainResults}`;
-    
-    worker.terminate();
+    `;
+      
+      // Combine selected fuels and main results
+      output.textContent = `${selectedFuels}${mainResults}`;
+      
+      worker.terminate();
     };
   });
+});
