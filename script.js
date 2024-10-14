@@ -35,7 +35,8 @@ function addFuel() {
   fuelData.forEach((fuel, index) => {
     const option = document.createElement('option');
     option.value = index;
-    option.text = `${fuel.Name} (${fuel.Type})`;
+    // Display Name with Chemical Formula
+    option.text = `${fuel.Name} (${fuel.Formula})`;
     fuelSelect.appendChild(option);
   });
 
@@ -52,6 +53,7 @@ function addFuel() {
   removeButton.type = 'button';
   removeButton.onclick = () => {
     fuelItem.remove();
+    fuelCount--;
     updateFlowRateLabel();
   };
 
@@ -71,9 +73,10 @@ function addFuel() {
 
 // Update flow rate label based on fuel types selected
 function updateFlowRateLabel() {
-  const flowRateLabel = document.getElementById('flow-rate-label');
+  const flowRateLabel = document.getElementById('fuel-flow-rate-label');
   const fuelFlowRateInput = document.getElementById('fuel-flow-rate');
   let containsSolidFuel = false;
+  let containsLiquidFuel = false;
 
   for (let i = 0; i < fuelCount; i++) {
     const fuelSelect = document.getElementById(`fuel-select-${i}`);
@@ -82,17 +85,44 @@ function updateFlowRateLabel() {
       const fuel = fuelData[fuelIndex];
       if (fuel.Type === 'Solid') {
         containsSolidFuel = true;
-        break;
+      }
+      if (fuel.Type === 'Liquid') {
+        containsLiquidFuel = true;
       }
     }
   }
 
-  if (containsSolidFuel) {
+  // Prevent mixing of different fuel types
+  const selectedTypes = new Set();
+  for (let i = 0; i < fuelCount; i++) {
+    const fuelSelect = document.getElementById(`fuel-select-${i}`);
+    if (fuelSelect) {
+      const fuelIndex = parseInt(fuelSelect.value);
+      const fuel = fuelData[fuelIndex];
+      selectedTypes.add(fuel.Type);
+    }
+  }
+
+  if (selectedTypes.size > 1) {
+    alert('Cannot mix Gas, Liquid, and Solid fuels. Please select fuels of the same type.');
+    // Optionally, remove the last added fuel
+    const lastFuelItem = document.getElementById(`fuel-item-${fuelCount - 1}`);
+    if (lastFuelItem) {
+      lastFuelItem.remove();
+      fuelCount--;
+    }
+    updateFlowRateLabel();
+    return;
+  }
+
+  if (containsSolidFuel || containsLiquidFuel) {
     flowRateLabel.textContent = 'Fuel Mass Flow Rate (kg/h):';
     fuelFlowRateInput.placeholder = 'Mass Flow Rate (kg/h)';
+    fuelFlowRateInput.value = fuelFlowRateInput.value || 0;
   } else {
     flowRateLabel.textContent = 'Fuel Volumetric Flow Rate (m³/h):';
     fuelFlowRateInput.placeholder = 'Volumetric Flow Rate (m³/h)';
+    fuelFlowRateInput.value = fuelFlowRateInput.value || 0;
   }
 }
 
@@ -125,8 +155,9 @@ function calculateCombustion() {
     return;
   }
 
-  // Check if mixture contains solid fuel
+  // Check if mixture contains solid or liquid fuel
   let containsSolidFuel = mixture.some(component => component.fuel.Type === 'Solid');
+  let containsLiquidFuel = mixture.some(component => component.fuel.Type === 'Liquid');
 
   // Get combustion variables
   const temperatureC = parseFloat(document.getElementById('temperature').value);
@@ -135,13 +166,18 @@ function calculateCombustion() {
   const flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
   const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
   const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
-
+  
+  // Get Air Humidity
+  const airHumidity = parseFloat(document.getElementById('air-humidity').value);
+  
+  // Validate inputs including airHumidity
   if (
     isNaN(temperatureC) || isNaN(pressureBar) ||
     isNaN(excessAirPercentage) || isNaN(flueGasTemperature) ||
-    isNaN(inletAirTemperatureC) || isNaN(referenceO2)
+    isNaN(inletAirTemperatureC) || isNaN(referenceO2) ||
+    isNaN(airHumidity) || airHumidity < 0 || airHumidity > 100
   ) {
-    alert('Please enter valid combustion variables.');
+    alert('Please enter valid combustion variables, including Air Humidity (0-100%).');
     return;
   }
 
@@ -153,7 +189,7 @@ function calculateCombustion() {
   }
 
   // Determine if flow rate is mass or volumetric
-  const isMassFlowRate = containsSolidFuel;
+  const isMassFlowRate = containsSolidFuel || containsLiquidFuel;
 
   // Disable the Calculate button
   const calculateButton = document.getElementById('calculate-button');
@@ -170,7 +206,8 @@ function calculateCombustion() {
     excessAirPercentage,
     flueGasTemperature,
     inletAirTemperatureC,
-    referenceO2
+    referenceO2,
+    airHumidity
   );
 }
 
@@ -184,7 +221,8 @@ function initWorker(
   excessAirPercentage,
   flueGasTemperature,
   inletAirTemperatureC,
-  referenceO2
+  referenceO2,
+  airHumidity
 ) {
   if (typeof worker === 'undefined') {
     worker = new Worker('worker.js');
@@ -200,7 +238,7 @@ function initWorker(
         return;
       }
 
-      displayResults(results);
+      displayResults(results, mixture);
 
       // Re-enable the Calculate button
       document.getElementById('calculate-button').disabled = false;
@@ -215,7 +253,7 @@ function initWorker(
     };
   }
 
-  // Post data to the worker
+  // Post data to the worker, including Air Humidity
   worker.postMessage({
     mixture,
     temperatureC,
@@ -225,14 +263,24 @@ function initWorker(
     excessAirPercentage,
     flueGasTemperatureC: flueGasTemperature,
     inletAirTemperatureC,
-    referenceO2
+    referenceO2,
+    airHumidity
   });
 }
 
 // Display results
-function displayResults(results) {
+function displayResults(results, mixture) {
   const output = document.getElementById('output');
-  output.textContent = `
+  
+  // Create a section for selected fuels
+  let selectedFuels = '=== Selected Fuels ===\n';
+  mixture.forEach(component => {
+    selectedFuels += `${component.fuel.Name} (${component.fuel.Formula}) - ${component.percentage}%\n`;
+  });
+  selectedFuels += '\n';
+
+  // Main results
+  let mainResults = `
 Average Molar Weight of Fuel Mixture: ${results.totalMolarMass.toFixed(2)} g/mol
 Lower Heating Value (LHV): ${results.totalLHV.toFixed(2)} MJ/kg
 Higher Heating Value (HHV): ${results.totalHHV.toFixed(2)} MJ/kg
@@ -240,7 +288,6 @@ Higher Heating Value (HHV): ${results.totalHHV.toFixed(2)} MJ/kg
 Molar Flow Rate of Fuel: ${results.nFuel.toFixed(4)} mol/s
 Molar Flow Rate of Air Required: ${results.nAir.toFixed(4)} mol/s
 Required Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}
-Combustion Efficiency: ${results.combustionEfficiency.toFixed(2)}%
 Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C
 Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³
 
@@ -283,12 +330,12 @@ NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)}
 NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)}
 NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)}
 
-=== CO Calculations ===
-CO (ppm): ${results.CO_ppm.toFixed(2)} ppm
-
 === Notes ===
 - CO ppm represents carbon monoxide emissions from incomplete combustion.
 - Other sources of CO (e.g., boiler walls) are not accounted for in this calculator.
 - Ensure proper maintenance and operation of combustion systems to minimize CO emissions.
   `;
+
+  // Combine selected fuels and main results
+  output.textContent = `${selectedFuels}${mainResults}`;
 }
