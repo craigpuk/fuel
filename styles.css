@@ -1,14 +1,13 @@
 /* styles.css */
 
 body {
-  font-family: 'Times New Roman', Times, serif; /* Classic document font */
+  font-family: Arial, sans-serif;
   margin: 20px;
   background-color: #f5f5f5;
 }
 
 h1, h2, h3 {
   color: #333;
-  text-align: center; /* Center-align headings for a formal look */
 }
 
 label {
@@ -31,7 +30,6 @@ button {
   color: white;
   border: none;
   cursor: pointer;
-  font-size: 16px;
 }
 
 button:hover {
@@ -53,13 +51,10 @@ button:hover {
 .fuel-item select, .fuel-item input {
   margin-right: 10px;
   padding: 5px;
-  font-size: 14px;
 }
 
 .fuel-item button {
   background-color: #f44336;
-  font-size: 14px;
-  padding: 5px 10px;
 }
 
 .fuel-item button:hover {
@@ -71,11 +66,6 @@ pre {
   padding: 15px;
   border-radius: 5px;
   overflow: auto;
-  white-space: pre-wrap; /* Allows lines to wrap */
-  word-wrap: break-word;
-  font-family: 'Courier New', Courier, monospace; /* Monospaced font for code-like appearance */
-  font-size: 14px;
-  line-height: 1.6;
 }
 
 /* Tooltip Styling */
@@ -92,50 +82,4 @@ input[title]:hover::after {
   z-index: 1000;
   opacity: 0.8;
   font-size: 12px;
-}
-
-/* Document-like Styling for Results */
-#results {
-  padding: 30px;
-  border: 1px solid #ccc;
-}
-
-#output {
-  background-color: #fff;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap; /* Allows text to wrap */
-  word-wrap: break-word;
-}
-
-/* Highlighting Selected Fuels in Results */
-#output .selected-fuels {
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-/* Printable Document Styling */
-@media print {
-  body {
-    background-color: white;
-    margin: 0;
-  }
-
-  #fuel-selection, #combustion-variables, #add-fuel-button {
-    display: none; /* Hide interactive elements when printing */
-  }
-
-  #results {
-    box-shadow: none;
-    border: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  button {
-    display: none;
-  }
 }
