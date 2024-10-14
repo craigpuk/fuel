@@ -1,293 +1,202 @@
 // script.js
 
-// Global variables
-let fuelData = [];
-let fuelCount = 0;
-let worker;
+document.addEventListener('DOMContentLoaded', () => {
+  const fuelListDiv = document.getElementById('fuel-list');
+  const addFuelButton = document.getElementById('add-fuel-button');
+  const calculateButton = document.getElementById('calculate-button');
+  const output = document.getElementById('output');
+  
+  let fuelCount = 0;
 
-// Fetch fuel data from JSON file
-fetch('fuel_data.json')
-  .then(response => response.json())
-  .then(data => {
-    fuelData = data;
-    initializeFuelSelection();
-  })
-  .catch(error => {
-    console.error('Error loading fuel data:', error);
-    alert('Failed to load fuel data.');
-  });
+  // Load fuel data from fuel_data.json
+  fetch('fuel_data.json')
+    .then(response => response.json())
+    .then(data => {
+      window.fuelData = data;
+      addFuelSelector();
+    })
+    .catch(error => {
+      console.error('Error loading fuel data:', error);
+      alert('Failed to load fuel data.');
+    });
 
-// Initialize fuel selection
-function initializeFuelSelection() {
-  document.getElementById('add-fuel-button').addEventListener('click', addFuel);
-  addFuel(); // Add the first fuel selection
-}
+  // Function to add a new fuel selector
+  function addFuelSelector() {
+    const fuelItem = document.createElement('div');
+    fuelItem.className = 'fuel-item';
+    fuelItem.id = `fuel-item-${fuelCount}`;
 
-// Add a new fuel selection row
-function addFuel() {
-  const fuelList = document.getElementById('fuel-list');
-  const fuelItem = document.createElement('div');
-  fuelItem.className = 'fuel-item';
-  fuelItem.id = `fuel-item-${fuelCount}`;
+    const select = document.createElement('select');
+    select.id = `fuel-select-${fuelCount}`;
 
-  const fuelSelect = document.createElement('select');
-  fuelSelect.id = `fuel-select-${fuelCount}`;
-  fuelData.forEach((fuel, index) => {
-    const option = document.createElement('option');
-    option.value = index;
-    // Display Name with Chemical Formula
-    option.text = `${fuel.Name} (${fuel.Formula})`;
-    fuelSelect.appendChild(option);
-  });
+    // Populate options with fuel names and formulas
+    window.fuelData.forEach((fuel, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.text = `${fuel.Name} (${fuel.Formula})`;
+      select.appendChild(option);
+    });
 
-  const percentageInput = document.createElement('input');
-  percentageInput.type = 'number';
-  percentageInput.id = `fuel-percentage-${fuelCount}`;
-  percentageInput.placeholder = 'Percentage (%)';
-  percentageInput.min = 0;
-  percentageInput.max = 100;
-  percentageInput.step = 'any';
+    const percentageInput = document.createElement('input');
+    percentageInput.type = 'number';
+    percentageInput.id = `fuel-percentage-${fuelCount}`;
+    percentageInput.value = '100';
+    percentageInput.min = '0';
+    percentageInput.max = '100';
+    percentageInput.step = 'any';
+    percentageInput.placeholder = 'Percentage (%)';
 
-  const removeButton = document.createElement('button');
-  removeButton.textContent = 'Remove';
-  removeButton.type = 'button';
-  removeButton.onclick = () => {
-    fuelItem.remove();
-    fuelCount--;
-    updateFlowRateLabel();
-  };
-
-  // Event listener to update flow rate label when fuel type changes
-  fuelSelect.addEventListener('change', updateFlowRateLabel);
-
-  fuelItem.appendChild(fuelSelect);
-  fuelItem.appendChild(percentageInput);
-  fuelItem.appendChild(removeButton);
-  fuelList.appendChild(fuelItem);
-
-  fuelCount++;
-
-  // Update flow rate label in case a solid fuel is added
-  updateFlowRateLabel();
-}
-
-// Update flow rate label based on fuel types selected
-function updateFlowRateLabel() {
-  const flowRateLabel = document.getElementById('fuel-flow-rate-label');
-  const fuelFlowRateInput = document.getElementById('fuel-flow-rate');
-  let containsSolidFuel = false;
-  let containsLiquidFuel = false;
-
-  for (let i = 0; i < fuelCount; i++) {
-    const fuelSelect = document.getElementById(`fuel-select-${i}`);
-    if (fuelSelect) {
-      const fuelIndex = parseInt(fuelSelect.value);
-      const fuel = fuelData[fuelIndex];
-      if (fuel.Type === 'Solid') {
-        containsSolidFuel = true;
-      }
-      if (fuel.Type === 'Liquid') {
-        containsLiquidFuel = true;
-      }
-    }
-  }
-
-  // Prevent mixing of different fuel types
-  const selectedTypes = new Set();
-  for (let i = 0; i < fuelCount; i++) {
-    const fuelSelect = document.getElementById(`fuel-select-${i}`);
-    if (fuelSelect) {
-      const fuelIndex = parseInt(fuelSelect.value);
-      const fuel = fuelData[fuelIndex];
-      selectedTypes.add(fuel.Type);
-    }
-  }
-
-  if (selectedTypes.size > 1) {
-    alert('Cannot mix Gas, Liquid, and Solid fuels. Please select fuels of the same type.');
-    // Optionally, remove the last added fuel
-    const lastFuelItem = document.getElementById(`fuel-item-${fuelCount - 1}`);
-    if (lastFuelItem) {
-      lastFuelItem.remove();
+    const removeButton = document.createElement('button');
+    removeButton.textContent = 'Remove';
+    removeButton.type = 'button';
+    removeButton.addEventListener('click', () => {
+      fuelItem.remove();
       fuelCount--;
-    }
+      updateFlowRateLabel();
+    });
+
+    fuelItem.appendChild(select);
+    fuelItem.appendChild(percentageInput);
+    fuelItem.appendChild(removeButton);
+    fuelListDiv.appendChild(fuelItem);
+
+    fuelCount++;
     updateFlowRateLabel();
-    return;
   }
 
-  if (containsSolidFuel || containsLiquidFuel) {
-    flowRateLabel.textContent = 'Fuel Mass Flow Rate (kg/h):';
-    fuelFlowRateInput.placeholder = 'Mass Flow Rate (kg/h)';
-    fuelFlowRateInput.value = fuelFlowRateInput.value || 0;
-  } else {
-    flowRateLabel.textContent = 'Fuel Volumetric Flow Rate (m³/h):';
-    fuelFlowRateInput.placeholder = 'Volumetric Flow Rate (m³/h)';
-    fuelFlowRateInput.value = fuelFlowRateInput.value || 0;
+  // Function to update the fuel flow rate label based on fuel types
+  function updateFlowRateLabel() {
+    const flowRateLabel = document.getElementById('fuel-flow-rate-label');
+    const fuelFlowRateInput = document.getElementById('fuel-flow-rate');
+
+    let containsSolidFuel = false;
+    let containsLiquidFuel = false;
+    let containsGasFuel = false;
+
+    for (let i = 0; i < fuelCount; i++) {
+      const fuelSelect = document.getElementById(`fuel-select-${i}`);
+      if (fuelSelect) {
+        const fuelIndex = parseInt(fuelSelect.value);
+        const fuel = window.fuelData[fuelIndex];
+        if (fuel.Type === 'Solid') containsSolidFuel = true;
+        if (fuel.Type === 'Liquid') containsLiquidFuel = true;
+        if (fuel.Type === 'Gas') containsGasFuel = true;
+      }
+    }
+
+    if ((containsSolidFuel && (containsLiquidFuel || containsGasFuel)) ||
+        (containsLiquidFuel && containsGasFuel)) {
+      alert('Cannot mix Gas, Liquid, and Solid fuels. Please select fuels of the same type.');
+      // Remove the last added fuel to maintain single fuel type
+      const lastFuelItem = document.getElementById(`fuel-item-${fuelCount - 1}`);
+      if (lastFuelItem) {
+        lastFuelItem.remove();
+        fuelCount--;
+      }
+      return;
+    }
+
+    if (containsSolidFuel || containsLiquidFuel) {
+      flowRateLabel.textContent = 'Fuel Mass Flow Rate (kg/h):';
+      fuelFlowRateInput.placeholder = 'Mass Flow Rate (kg/h)';
+    } else {
+      flowRateLabel.textContent = 'Fuel Volumetric Flow Rate (m³/h):';
+      fuelFlowRateInput.placeholder = 'Volumetric Flow Rate (m³/h)';
+    }
   }
-}
 
-// Calculate button event listener
-document.getElementById('calculate-button').addEventListener('click', calculateCombustion);
+  addFuelButton.addEventListener('click', addFuelSelector);
 
-// Main calculation function
-function calculateCombustion() {
-  // Get fuel mixture
-  let mixture = [];
-  let totalPercentage = 0;
-  for (let i = 0; i < fuelCount; i++) {
-    const fuelItem = document.getElementById(`fuel-item-${i}`);
-    if (fuelItem) {
+  calculateButton.addEventListener('click', () => {
+    const mixture = [];
+    for (let i = 0; i < fuelCount; i++) {
       const fuelSelect = document.getElementById(`fuel-select-${i}`);
       const percentageInput = document.getElementById(`fuel-percentage-${i}`);
-      const fuelIndex = parseInt(fuelSelect.value);
-      const percentage = parseFloat(percentageInput.value);
-      if (isNaN(percentage) || percentage <= 0) {
-        alert('Please enter a valid percentage for all fuels.');
-        return;
+      if (fuelSelect && percentageInput) {
+        const fuelIndex = parseInt(fuelSelect.value);
+        const fuel = window.fuelData[fuelIndex];
+        const percentage = parseFloat(percentageInput.value);
+        if (isNaN(percentage) || percentage < 0) {
+          alert('Please enter valid fuel percentages.');
+          return;
+        }
+        mixture.push({ fuel, percentage });
       }
-      totalPercentage += percentage;
-      mixture.push({ fuel: fuelData[fuelIndex], percentage: percentage });
     }
-  }
 
-  if (Math.abs(totalPercentage - 100) > 0.01) {
-    alert('Total percentage of fuels must add up to 100%.');
-    return;
-  }
+    const flowRateInput = document.getElementById('fuel-flow-rate');
+    const fuelFlowRate = parseFloat(flowRateInput.value);
+    if (isNaN(fuelFlowRate) || fuelFlowRate <= 0) {
+      alert('Please enter a valid fuel flow rate.');
+      return;
+    }
 
-  // Check if mixture contains solid or liquid fuel
-  let containsSolidFuel = mixture.some(component => component.fuel.Type === 'Solid');
-  let containsLiquidFuel = mixture.some(component => component.fuel.Type === 'Liquid');
+    const isMassFlowRate = (() => {
+      const flowRateLabel = document.getElementById('fuel-flow-rate-label').textContent;
+      return flowRateLabel.includes('Mass');
+    })();
 
-  // Get combustion variables
-  const temperatureC = parseFloat(document.getElementById('temperature').value);
-  const pressureBar = parseFloat(document.getElementById('pressure').value);
-  const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
-  const flueGasTemperature = parseFloat(document.getElementById('flue-gas-temperature').value);
-  const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
-  const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
-  
-  // Get Air Humidity
-  const airHumidity = parseFloat(document.getElementById('air-humidity').value);
-  
-  // Validate inputs including airHumidity
-  if (
-    isNaN(temperatureC) || isNaN(pressureBar) ||
-    isNaN(excessAirPercentage) || isNaN(flueGasTemperature) ||
-    isNaN(inletAirTemperatureC) || isNaN(referenceO2) ||
-    isNaN(airHumidity) || airHumidity < 0 || airHumidity > 100
-  ) {
-    alert('Please enter valid combustion variables, including Air Humidity (0-100%).');
-    return;
-  }
+    const temperatureC = parseFloat(document.getElementById('temperature').value);
+    const inletAirTemperatureC = parseFloat(document.getElementById('inlet-air-temperature').value);
+    const pressureBar = parseFloat(document.getElementById('pressure').value);
+    const excessAirPercentage = parseFloat(document.getElementById('excess-air').value);
+    const flueGasTemperatureC = parseFloat(document.getElementById('flue-gas-temperature').value);
+    const referenceO2 = parseFloat(document.getElementById('reference-o2').value);
+    const airHumidity = parseFloat(document.getElementById('air-humidity').value);
 
-  // Get fuel flow rate
-  const fuelFlowRate = parseFloat(document.getElementById('fuel-flow-rate').value);
-  if (isNaN(fuelFlowRate) || fuelFlowRate <= 0) {
-    alert('Please enter a valid fuel flow rate.');
-    return;
-  }
+    // Validate inputs
+    if (
+      isNaN(temperatureC) || isNaN(pressureBar) ||
+      isNaN(excessAirPercentage) || isNaN(flueGasTemperatureC) ||
+      isNaN(inletAirTemperatureC) || isNaN(referenceO2) ||
+      isNaN(airHumidity) || airHumidity < 0 || airHumidity > 100
+    ) {
+      alert('Please enter valid combustion variables, including Air Humidity (0-100%).');
+      return;
+    }
 
-  // Determine if flow rate is mass or volumetric
-  const isMassFlowRate = containsSolidFuel || containsLiquidFuel;
+    // Prepare data to send to worker
+    const data = {
+      mixture,
+      temperatureC,
+      pressureBar,
+      fuelFlowRate,
+      isMassFlowRate,
+      excessAirPercentage,
+      flueGasTemperatureC,
+      inletAirTemperatureC,
+      referenceO2,
+      airHumidity
+    };
 
-  // Disable the Calculate button
-  const calculateButton = document.getElementById('calculate-button');
-  calculateButton.disabled = true;
-  calculateButton.textContent = 'Calculating...';
-
-  // Initialize the worker and start calculations
-  initWorker(
-    mixture,
-    temperatureC,
-    pressureBar,
-    fuelFlowRate,
-    isMassFlowRate,
-    excessAirPercentage,
-    flueGasTemperature,
-    inletAirTemperatureC,
-    referenceO2,
-    airHumidity
-  );
-}
-
-// Initialize Web Worker
-function initWorker(
-  mixture,
-  temperatureC,
-  pressureBar,
-  fuelFlowRate,
-  isMassFlowRate,
-  excessAirPercentage,
-  flueGasTemperature,
-  inletAirTemperatureC,
-  referenceO2,
-  airHumidity
-) {
-  if (typeof worker === 'undefined') {
-    worker = new Worker('worker.js');
+    // Initialize Web Worker
+    const worker = new Worker('worker.js');
+    worker.postMessage(data);
 
     worker.onmessage = function(e) {
       const results = e.data;
-
       if (results.error) {
-        alert('An error occurred during calculations: ' + results.error);
-        console.error('Calculation error:', results.error);
-        document.getElementById('calculate-button').disabled = false;
-        document.getElementById('calculate-button').textContent = 'Calculate';
+        alert(`Calculation Error: ${results.error}`);
+        output.textContent = '';
         return;
       }
 
-      displayResults(results, mixture);
+      // Create a section for selected fuels
+      let selectedFuels = '=== Selected Fuels ===\n';
+      mixture.forEach(component => {
+        selectedFuels += `${component.fuel.Name} (${component.fuel.Formula}) - ${component.percentage}%\n`;
+      });
+      selectedFuels += '\n';
 
-      // Re-enable the Calculate button
-      document.getElementById('calculate-button').disabled = false;
-      document.getElementById('calculate-button').textContent = 'Calculate';
-    };
-
-    worker.onerror = function(error) {
-      console.error('Worker error:', error);
-      alert('An error occurred during calculations.');
-      document.getElementById('calculate-button').disabled = false;
-      document.getElementById('calculate-button').textContent = 'Calculate';
-    };
-  }
-
-  // Post data to the worker, including Air Humidity
-  worker.postMessage({
-    mixture,
-    temperatureC,
-    pressureBar,
-    fuelFlowRate,
-    isMassFlowRate,
-    excessAirPercentage,
-    flueGasTemperatureC: flueGasTemperature,
-    inletAirTemperatureC,
-    referenceO2,
-    airHumidity
-  });
-}
-
-// Display results
-function displayResults(results, mixture) {
-  const output = document.getElementById('output');
-  
-  // Create a section for selected fuels
-  let selectedFuels = '=== Selected Fuels ===\n';
-  mixture.forEach(component => {
-    selectedFuels += `${component.fuel.Name} (${component.fuel.Formula}) - ${component.percentage}%\n`;
-  });
-  selectedFuels += '\n';
-
-  // Main results
-  let mainResults = `
+      // Format main results
+      const mainResults = `
 Average Molar Weight of Fuel Mixture: ${results.totalMolarMass.toFixed(2)} g/mol
 Lower Heating Value (LHV): ${results.totalLHV.toFixed(2)} MJ/kg
 Higher Heating Value (HHV): ${results.totalHHV.toFixed(2)} MJ/kg
 
 Molar Flow Rate of Fuel: ${results.nFuel.toFixed(4)} mol/s
 Molar Flow Rate of Air Required: ${results.nAir.toFixed(4)} mol/s
-Required Air Flow Rate: ${results.airFlowRate.toFixed(2)} ${results.flowRateUnit}
+Required Air Flow Rate: ${results.airFlowRate_m3h.toFixed(2)} m³/h
 Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C
 Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³
 
@@ -335,7 +244,10 @@ NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed
 - Other sources of CO (e.g., boiler walls) are not accounted for in this calculator.
 - Ensure proper maintenance and operation of combustion systems to minimize CO emissions.
   `;
-
-  // Combine selected fuels and main results
-  output.textContent = `${selectedFuels}${mainResults}`;
-}
+    
+    // Combine selected fuels and main results
+    output.textContent = `${selectedFuels}${mainResults}`;
+    
+    worker.terminate();
+    };
+  });
