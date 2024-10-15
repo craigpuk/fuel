@@ -21,7 +21,7 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        input[type="number"], input[type="text"], button {
+        input[type="number"], input[type="text"], select, button {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -43,6 +43,9 @@
             background-color: #e9ecef;
             border-left: 5px solid #007bff;
         }
+        .fuel-entry {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -50,26 +53,54 @@
     <div class="container">
         <h1>Combustion Calculator</h1>
 
-        <label for="fuelPercentage">Enter Fuel Percentages (e.g., Methane: 50, Propane: 30):</label>
-        <input type="text" id="fuelPercentage" placeholder="e.g. Methane: 50, Propane: 30">
-        
+        <div id="fuelEntries">
+            <div class="fuel-entry">
+                <label for="fuelType">Select Fuel Type:</label>
+                <select class="fuelType">
+                    <option value="Methane">Methane</option>
+                    <option value="Ethane">Ethane</option>
+                    <option value="Propane">Propane</option>
+                    <option value="i-Butane">i-Butane</option>
+                    <option value="n-Butane">n-Butane</option>
+                    <option value="i-Pentane">i-Pentane</option>
+                    <option value="n-Pentane">n-Pentane</option>
+                    <option value="Neopentane">Neopentane</option>
+                    <option value="n-Hexane">n-Hexane</option>
+                    <option value="n-Heptane">n-Heptane</option>
+                    <option value="n-Octane">n-Octane</option>
+                    <option value="Ethylene">Ethylene</option>
+                    <option value="Propylene">Propylene</option>
+                    <option value="Butenes">Butenes</option>
+                    <option value="Acetylene">Acetylene</option>
+                    <option value="Benzene">Benzene</option>
+                    <option value="Toluene">Toluene</option>
+                    <option value="Bioethanol">Bioethanol</option>
+                    <option value="Biodiesel">Biodiesel</option>
+                </select>
+                <label for="fuelPercentage">Percentage (%):</label>
+                <input type="number" class="fuelPercentage" placeholder="e.g., 50" min="0" max="100">
+                <button class="removeBtn">Remove</button>
+            </div>
+        </div>
+        <button id="addFuelBtn">Add Another Fuel</button>
+
         <label for="totalFuelFlow">Total Fuel Flow Rate (m³/h):</label>
-        <input type="number" id="totalFuelFlow" placeholder="Total Fuel Flow Rate (m³/h)">
+        <input type="number" id="totalFuelFlow" placeholder="Total Fuel Flow Rate (m³/h)" required>
         
         <label for="gasTemp">Gas Temperature (°C):</label>
-        <input type="number" id="gasTemp" placeholder="Gas Temperature (°C)">
+        <input type="number" id="gasTemp" placeholder="Gas Temperature (°C)" required>
         
         <label for="gasPressure">Gas Pressure (bar):</label>
-        <input type="number" id="gasPressure" placeholder="Gas Pressure (bar)">
+        <input type="number" id="gasPressure" placeholder="Gas Pressure (bar)" required>
         
         <label for="airHumidity">Air Inlet Humidity (%):</label>
-        <input type="number" id="airHumidity" placeholder="Air Inlet Humidity (%)">
+        <input type="number" id="airHumidity" placeholder="Air Inlet Humidity (%)" required>
         
         <label for="airTemp">Air Inlet Temperature (°C):</label>
-        <input type="number" id="airTemp" placeholder="Air Inlet Temperature (°C)">
+        <input type="number" id="airTemp" placeholder="Air Inlet Temperature (°C)" required>
         
         <label for="excessAir">Excess Air (%):</label>
-        <input type="number" id="excessAir" placeholder="Excess Air (%)">
+        <input type="number" id="excessAir" placeholder="Excess Air (%)" required>
         
         <button id="calculateBtn">Calculate</button>
 
@@ -82,13 +113,7 @@
             return await response.json();
         }
 
-        function calculateCombustion(fuelPercentages, totalFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData) {
-            const fuels = fuelPercentages.split(',').reduce((acc, fuel) => {
-                const [name, percent] = fuel.split(':').map(item => item.trim());
-                acc[name] = parseFloat(percent) / 100; // Convert to fraction
-                return acc;
-            }, {});
-
+        function calculateCombustion(fuels, totalFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData) {
             const results = {
                 averageMolarWeight: 0,
                 totalLHV: 0,
@@ -98,13 +123,14 @@
             };
 
             let totalFuel = 0;
+            let totalPercentage = 0;
 
-            for (const fuel in fuels) {
-                const fuelInfo = fuelData.find(item => item.Name.toLowerCase() === fuel.toLowerCase());
+            for (const fuel of fuels) {
+                const fuelInfo = fuelData.find(item => item.Name === fuel.type);
                 if (fuelInfo) {
-                    const flowRate = totalFlow * fuels[fuel]; // in m³/h
+                    const flowRate = totalFlow * (fuel.percentage / 100); // Convert percentage to fraction
                     const molarMass = fuelInfo.MolarMass;
-                    results.averageMolarWeight += molarMass * fuels[fuel];
+                    results.averageMolarWeight += molarMass * (fuel.percentage / 100);
                     results.totalLHV += fuelInfo.HeatingValue * flowRate;
                     results.totalHHV += fuelInfo.HHV * flowRate;
                     totalFuel += flowRate;
@@ -115,7 +141,7 @@
                 }
             }
 
-            results.averageMolarWeight /= Object.keys(fuels).length; // Calculate average
+            results.averageMolarWeight /= fuels.length; // Calculate average
             results.airRequired = totalFuel * 14.7; // kg of air required (approximation)
 
             // Flue gas calculations
@@ -128,8 +154,61 @@
             return results;
         }
 
+        document.getElementById('addFuelBtn').addEventListener('click', () => {
+            const newFuelEntry = document.createElement('div');
+            newFuelEntry.classList.add('fuel-entry');
+            newFuelEntry.innerHTML = `
+                <label for="fuelType">Select Fuel Type:</label>
+                <select class="fuelType">
+                    <option value="Methane">Methane</option>
+                    <option value="Ethane">Ethane</option>
+                    <option value="Propane">Propane</option>
+                    <option value="i-Butane">i-Butane</option>
+                    <option value="n-Butane">n-Butane</option>
+                    <option value="i-Pentane">i-Pentane</option>
+                    <option value="n-Pentane">n-Pentane</option>
+                    <option value="Neopentane">Neopentane</option>
+                    <option value="n-Hexane">n-Hexane</option>
+                    <option value="n-Heptane">n-Heptane</option>
+                    <option value="n-Octane">n-Octane</option>
+                    <option value="Ethylene">Ethylene</option>
+                    <option value="Propylene">Propylene</option>
+                    <option value="Butenes">Butenes</option>
+                    <option value="Acetylene">Acetylene</option>
+                    <option value="Benzene">Benzene</option>
+                    <option value="Toluene">Toluene</option>
+                    <option value="Bioethanol">Bioethanol</option>
+                    <option value="Biodiesel">Biodiesel</option>
+                </select>
+                <label for="fuelPercentage">Percentage (%):</label>
+                <input type="number" class="fuelPercentage" placeholder="e.g., 50" min="0" max="100">
+                <button class="removeBtn">Remove</button>
+            `;
+            document.getElementById('fuelEntries').appendChild(newFuelEntry);
+            newFuelEntry.querySelector('.removeBtn').addEventListener('click', () => {
+                newFuelEntry.remove();
+            });
+        });
+
         document.getElementById('calculateBtn').addEventListener('click', async () => {
-            const fuelPercentage = document.getElementById('fuelPercentage').value;
+            const fuelEntries = document.querySelectorAll('.fuel-entry');
+            const fuels = [];
+            let totalPercentage = 0;
+
+            fuelEntries.forEach(entry => {
+                const fuelType = entry.querySelector('.fuelType').value;
+                const fuelPercentage = parseFloat(entry.querySelector('.fuelPercentage').value);
+                if (fuelPercentage) {
+                    fuels.push({ type: fuelType, percentage: fuelPercentage });
+                    totalPercentage += fuelPercentage;
+                }
+            });
+
+            if (totalPercentage !== 100) {
+                alert('Total percentage must equal 100%.');
+                return;
+            }
+
             const totalFuelFlow = parseFloat(document.getElementById('totalFuelFlow').value);
             const gasTemp = parseFloat(document.getElementById('gasTemp').value);
             const gasPressure = parseFloat(document.getElementById('gasPressure').value);
@@ -137,9 +216,9 @@
             const airTemp = parseFloat(document.getElementById('airTemp').value);
             const excessAir = parseFloat(document.getElementById('excessAir').value);
 
-            if (fuelPercentage && totalFuelFlow && gasTemp && gasPressure && airHumidity && airTemp && excessAir) {
+            if (totalFuelFlow && gasTemp && gasPressure && airHumidity && airTemp && excessAir) {
                 const fuelData = await fetchFuelData();
-                const results = calculateCombustion(fuelPercentage, totalFuelFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData);
+                const results = calculateCombustion(fuels, totalFuelFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData);
 
                 document.getElementById('results').innerHTML = `
                     <h3>Results:</h3>
