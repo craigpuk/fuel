@@ -91,6 +91,7 @@
         let fuelData = [];
         let fuelCount = 0;
 
+        // Fetch fuel data from JSON file
         fetch('fuel_data.json')
             .then(response => response.json())
             .then(data => {
@@ -114,12 +115,10 @@
 
             const fuelSelect = document.createElement('select');
             fuelSelect.className = 'fuelType';
-
-            // Populate fuel options
             fuelData.forEach((fuel, index) => {
                 const option = document.createElement('option');
                 option.value = index;
-                option.text = `${fuel.Name} ${fuel.Formula} (${fuel.Type})`;
+                option.text = `${fuel.Name} (${fuel.Type})`;
                 fuelSelect.appendChild(option);
             });
 
