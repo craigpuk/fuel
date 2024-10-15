@@ -104,7 +104,7 @@
 
         function initializeFuelSelection() {
             document.getElementById('addFuelBtn').addEventListener('click', addFuel);
-            addFuel();
+            addFuel(); // Add the first fuel selection
         }
 
         function addFuel() {
@@ -114,6 +114,8 @@
 
             const fuelSelect = document.createElement('select');
             fuelSelect.className = 'fuelType';
+
+            // Populate fuel options
             fuelData.forEach((fuel, index) => {
                 const option = document.createElement('option');
                 option.value = index;
@@ -191,21 +193,12 @@
             const airFlowRate = (nAir * R * (inletAirTemperatureC + 273.15)) / (pressureBar * 1e5); // in m³/s
             const airFlowRateM3h = airFlowRate * 3600; // Convert to m³/h
 
-            // Simplified combustion efficiency calculation
-            const combustionEfficiency = 100; // Assume 100% for now
-
-            // Calculate the combustion products
+            // Calculate combustion products
             const nCO2 = mixture.reduce((sum, component) => sum + (component.percentage / 100) * (component.fuel.C || 0) * nFuel, 0); // CO2 from carbon
             const nH2O = mixture.reduce((sum, component) => sum + (component.percentage / 100) * (component.fuel.H || 0) * nFuel / 2, 0); // H2O from hydrogen
             const nO2 = nAir * 0.2095; // O2 supplied
             const nN2 = nAir * 0.7905; // N2 in air
 
-            // Placeholder values for ash and other parameters
-            const nAsh = 0; // Adjust if necessary
-            const nSO2 = 0; // Adjust if necessary
-            const nUnburnedH2 = 0; // Adjust if necessary
-
-            // Displaying the results in the specified format
             return {
                 totalMolarMass,
                 totalLHV,
@@ -213,15 +206,10 @@
                 nFuel,
                 nAir,
                 airFlowRateM3h,
-                combustionEfficiency,
-                flueGasTemperatureC,
                 nCO2,
                 nH2O,
-                nSO2,
-                nUnburnedH2,
                 nO2,
-                nN2,
-                nAsh
+                nN2
             };
         }
 
@@ -234,21 +222,10 @@
                 <p>Molar Flow Rate of Fuel: <strong>${results.nFuel.toFixed(4)} mol/s</strong></p>
                 <p>Molar Flow Rate of Air Required: <strong>${results.nAir.toFixed(4)} mol/s</strong></p>
                 <p>Required Air Flow Rate: <strong>${results.airFlowRateM3h.toFixed(2)} m³/h</strong></p>
-                <p>Combustion Efficiency: <strong>${results.combustionEfficiency.toFixed(2)}%</strong></p>
-                <p>Flue Gas Temperature: <strong>${results.flueGasTemperatureC.toFixed(2)} °C</strong></p>
-                <p>Fuel Gas Density: <strong>${results.fuelGasDensity ? results.fuelGasDensity.toFixed(4) : 'N/A'} kg/m³</strong></p>
-
-                <h4>=== Combustion Products ===</h4>
-                <p>Molar flow rates (mol/s):</p>
-                <ul>
-                    <li>CO2: <strong>${results.nCO2.toFixed(4)} mol/s</strong></li>
-                    <li>H2O: <strong>${results.nH2O.toFixed(4)} mol/s</strong></li>
-                    <li>SO2: <strong>${results.nSO2.toFixed(4)} mol/s</strong></li>
-                    <li>H2: <strong>${results.nUnburnedH2.toFixed(4)} mol/s</strong></li>
-                    <li>O2: <strong>${results.nO2.toFixed(4)} mol/s</strong></li>
-                    <li>N2: <strong>${results.nN2.toFixed(4)} mol/s</strong></li>
-                    <li>Ash: <strong>${results.nAsh.toFixed(4)} mol/s</strong></li>
-                </ul>
+                <p>CO2 Produced: <strong>${results.nCO2.toFixed(4)} mol/s</strong></p>
+                <p>H2O Produced: <strong>${results.nH2O.toFixed(4)} mol/s</strong></p>
+                <p>O2 Supplied: <strong>${results.nO2.toFixed(4)} mol/s</strong></p>
+                <p>N2 in Air: <strong>${results.nN2.toFixed(4)} mol/s</strong></p>
             `;
         }
     </script>
