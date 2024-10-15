@@ -1,51 +1,164 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Combustion Calculator</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combustion Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input[type="number"], input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-left: 5px solid #007bff;
+        }
+    </style>
 </head>
 <body>
-  <h1>Combustion Calculator by C Prescott</h1>
 
-  <div id="fuel-selection">
-    <h2>Select Fuels and Percentages</h2>
-    <div id="fuel-list"></div>
-    <button id="add-fuel-button">Add Fuel</button>
-  </div>
+    <div class="container">
+        <h1>Combustion Calculator</h1>
 
-  <div id="combustion-variables">
-    <h2>Enter Combustion Variables</h2>
-    <label id="flow-rate-label" for="fuel-flow-rate">Fuel Flow Rate:</label>
-    <input type="number" id="fuel-flow-rate" value="1600" step="any"><br>
+        <label for="fuelPercentage">Enter Fuel Percentages (e.g., Methane: 50, Propane: 30):</label>
+        <input type="text" id="fuelPercentage" placeholder="e.g. Methane: 50, Propane: 30">
+        
+        <label for="totalFuelFlow">Total Fuel Flow Rate (m³/h):</label>
+        <input type="number" id="totalFuelFlow" placeholder="Total Fuel Flow Rate (m³/h)">
+        
+        <label for="gasTemp">Gas Temperature (°C):</label>
+        <input type="number" id="gasTemp" placeholder="Gas Temperature (°C)">
+        
+        <label for="gasPressure">Gas Pressure (bar):</label>
+        <input type="number" id="gasPressure" placeholder="Gas Pressure (bar)">
+        
+        <label for="airHumidity">Air Inlet Humidity (%):</label>
+        <input type="number" id="airHumidity" placeholder="Air Inlet Humidity (%)">
+        
+        <label for="airTemp">Air Inlet Temperature (°C):</label>
+        <input type="number" id="airTemp" placeholder="Air Inlet Temperature (°C)">
+        
+        <label for="excessAir">Excess Air (%):</label>
+        <input type="number" id="excessAir" placeholder="Excess Air (%)">
+        
+        <button id="calculateBtn">Calculate</button>
 
-    <label for="temperature">Gas Inlet Temperature (°C):</label>
-    <input type="number" id="temperature" value="25" step="any"><br>
+        <div class="results" id="results"></div>
+    </div>
 
-    <label for="inlet-air-temperature">Inlet Air Temperature (°C):</label>
-    <input type="number" id="inlet-air-temperature" value="10" step="any"><br>
+    <script>
+        async function fetchFuelData() {
+            const response = await fetch('fuel_data.json');
+            return await response.json();
+        }
 
-    <label for="pressure">Gas Inlet Pressure (bar):</label>
-    <input type="number" id="pressure" value="1" step="any"><br>
+        function calculateCombustion(fuelPercentages, totalFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData) {
+            const fuels = fuelPercentages.split(',').reduce((acc, fuel) => {
+                const [name, percent] = fuel.split(':').map(item => item.trim());
+                acc[name] = parseFloat(percent) / 100; // Convert to fraction
+                return acc;
+            }, {});
 
-    <label for="excess-air">Excess Air Percentage (%):</label>
-    <input type="number" id="excess-air" value="10" step="any"><br>
+            const results = {
+                averageMolarWeight: 0,
+                totalLHV: 0,
+                totalHHV: 0,
+                airRequired: 0,
+                flueGasComposition: {}
+            };
 
-    <label for="flue-gas-temperature">Flue Gas Temperature (°C):</label>
-    <input type="number" id="flue-gas-temperature" value="200" step="any"><br>
+            let totalFuel = 0;
 
-    <label for="reference-o2">NOx Reference O₂ (%):</label>
-    <input type="number" id="reference-o2" value="3" step="any"><br>
+            for (const fuel in fuels) {
+                const fuelInfo = fuelData.find(item => item.Name.toLowerCase() === fuel.toLowerCase());
+                if (fuelInfo) {
+                    const flowRate = totalFlow * fuels[fuel]; // in m³/h
+                    const molarMass = fuelInfo.MolarMass;
+                    results.averageMolarWeight += molarMass * fuels[fuel];
+                    results.totalLHV += fuelInfo.HeatingValue * flowRate;
+                    results.totalHHV += fuelInfo.HHV * flowRate;
+                    totalFuel += flowRate;
 
-    <button id="calculate-button">Calculate</button>
-  </div>
+                    // Calculate flue gas composition based on combustion
+                    results.flueGasComposition.CO2 = (fuelInfo.C * flowRate) * 3.76; // CO2 produced
+                    results.flueGasComposition.H2O = (fuelInfo.H / 2 * flowRate) * 18.015; // H2O produced
+                }
+            }
 
-  <div id="results">
-    <h2>And The Results</h2>
-    <pre id="output"></pre>
-  </div>
+            results.averageMolarWeight /= Object.keys(fuels).length; // Calculate average
+            results.airRequired = totalFuel * 14.7; // kg of air required (approximation)
 
-  <script src="script.js"></script>
+            // Flue gas calculations
+            const totalAir = results.airRequired * (1 + excessAir / 100);
+            const totalFlueGas = totalFuel + totalAir;
+
+            results.flueGasComposition.O2 = (totalAir * 0.21) - results.flueGasComposition.CO2; // O2 left after combustion
+            results.flueGasComposition.N2 = totalAir * 0.79; // N2 in air
+
+            return results;
+        }
+
+        document.getElementById('calculateBtn').addEventListener('click', async () => {
+            const fuelPercentage = document.getElementById('fuelPercentage').value;
+            const totalFuelFlow = parseFloat(document.getElementById('totalFuelFlow').value);
+            const gasTemp = parseFloat(document.getElementById('gasTemp').value);
+            const gasPressure = parseFloat(document.getElementById('gasPressure').value);
+            const airHumidity = parseFloat(document.getElementById('airHumidity').value);
+            const airTemp = parseFloat(document.getElementById('airTemp').value);
+            const excessAir = parseFloat(document.getElementById('excessAir').value);
+
+            if (fuelPercentage && totalFuelFlow && gasTemp && gasPressure && airHumidity && airTemp && excessAir) {
+                const fuelData = await fetchFuelData();
+                const results = calculateCombustion(fuelPercentage, totalFuelFlow, gasTemp, gasPressure, airHumidity, airTemp, excessAir, fuelData);
+
+                document.getElementById('results').innerHTML = `
+                    <h3>Results:</h3>
+                    <p>Average Molar Weight: <strong>${results.averageMolarWeight.toFixed(2)} g/mol</strong></p>
+                    <p>Total LHV: <strong>${results.totalLHV.toFixed(2)} MJ</strong></p>
+                    <p>Total HHV: <strong>${results.totalHHV.toFixed(2)} MJ</strong></p>
+                    <p>Air Required: <strong>${results.airRequired.toFixed(2)} kg</strong></p>
+                    <p>Flue Gas Composition:</p>
+                    <ul>
+                        <li>CO2: <strong>${results.flueGasComposition.CO2.toFixed(2)} kg</strong></li>
+                        <li>H2O: <strong>${results.flueGasComposition.H2O.toFixed(2)} kg</strong></li>
+                        <li>O2: <strong>${results.flueGasComposition.O2.toFixed(2)} kg</strong></li>
+                        <li>N2: <strong>${results.flueGasComposition.N2.toFixed(2)} kg</strong></li>
+                    </ul>
+                `;
+            } else {
+                alert('Please enter valid inputs for all fields.');
+            }
+        });
+    </script>
 </body>
 </html>
