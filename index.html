@@ -21,6 +21,10 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+        }
         input[type="number"], input[type="text"], select, button {
             width: 100%;
             padding: 10px;
@@ -43,6 +47,17 @@
             background-color: #e9ecef;
             border-left: 5px solid #007bff;
         }
+        .fuel-entry {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .removeBtn {
+            background-color: #dc3545;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -55,7 +70,7 @@
                 <label for="fuelType">Select Fuel Type:</label>
                 <select class="fuelType"></select>
                 <label for="fuelPercentage">Percentage (%):</label>
-                <input type="number" class="fuelPercentage" placeholder="e.g., 50" min="0" max="100">
+                <input type="number" class="fuelPercentage" placeholder="e.g., 50" min="0" max="100" required>
                 <button class="removeBtn">Remove</button>
             </div>
         </div>
@@ -125,12 +140,13 @@
             const percentageInput = document.createElement('input');
             percentageInput.type = 'number';
             percentageInput.className = 'fuelPercentage';
-            percentageInput.placeholder = 'Percentage (%)';
+            percentageInput.placeholder = 'e.g., 50';
             percentageInput.min = 0;
             percentageInput.max = 100;
 
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
+            removeButton.className = 'removeBtn';
             removeButton.type = 'button';
             removeButton.onclick = () => {
                 fuelItem.remove();
