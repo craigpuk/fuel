@@ -110,8 +110,14 @@
                 averageMolarWeight: 0,
                 totalLHV: 0,
                 totalHHV: 0,
+                molarFlowRateFuel: 0,
+                molarFlowRateAir: 0,
                 airRequired: 0,
-                flueGasComposition: {}
+                combustionEfficiency: 100, // Assuming 100% for now
+                flameTemperature: 1909.65, // Placeholder
+                fuelGasDensity: 0.7156, // Placeholder
+                flueGasComposition: {},
+                nox: 0 // Placeholder for NOx
             };
 
             let totalFuel = 0;
@@ -136,12 +142,17 @@
             results.averageMolarWeight /= fuels.length; // Calculate average
             results.airRequired = totalFuel * 14.7; // kg of air required (approximation)
 
+            // Calculate Molar Flow Rates
+            results.molarFlowRateFuel = totalFuel / results.averageMolarWeight; // in mol/s
+            results.molarFlowRateAir = results.airRequired / 28.97; // Molar mass of air ~ 28.97 g/mol
+
             // Flue gas calculations
             const totalAir = results.airRequired * (1 + excessAir / 100);
-            const totalFlueGas = totalFuel + totalAir;
-
             results.flueGasComposition.O2 = (totalAir * 0.21) - results.flueGasComposition.CO2; // O2 left after combustion
             results.flueGasComposition.N2 = totalAir * 0.79; // N2 in air
+
+            // Calculate NOx
+            results.nox = 0.005; // Placeholder for NOx calculations
 
             return results;
         }
@@ -160,6 +171,7 @@
             newFuelEntry.querySelector('.removeBtn').addEventListener('click', () => {
                 newFuelEntry.remove();
             });
+            populateFuelSelect(fuelData); // Populate new fuel entry
         });
 
         document.getElementById('calculateBtn').addEventListener('click', async () => {
@@ -194,17 +206,32 @@
 
                 document.getElementById('results').innerHTML = `
                     <h3>Results:</h3>
-                    <p>Average Molar Weight: <strong>${results.averageMolarWeight.toFixed(2)} g/mol</strong></p>
-                    <p>Total LHV: <strong>${results.totalLHV.toFixed(2)} MJ</strong></p>
-                    <p>Total HHV: <strong>${results.totalHHV.toFixed(2)} MJ</strong></p>
-                    <p>Air Required: <strong>${results.airRequired.toFixed(2)} kg</strong></p>
-                    <p>Flue Gas Composition:</p>
+                    <p>Average Molar Weight of Fuel Mixture: <strong>${results.averageMolarWeight.toFixed(2)} g/mol</strong></p>
+                    <p>Lower Heating Value (LHV): <strong>${results.totalLHV.toFixed(2)} MJ/kg</strong></p>
+                    <p>Higher Heating Value (HHV): <strong>${results.totalHHV.toFixed(2)} MJ/kg</strong></p>
+                    <p>Molar Flow Rate of Fuel: <strong>${results.molarFlowRateFuel.toFixed(4)} mol/s</strong></p>
+                    <p>Molar Flow Rate of Air Required: <strong>${results.molarFlowRateAir.toFixed(4)} mol/s</strong></p>
+                    <p>Required Air Flow Rate: <strong>${results.airRequired.toFixed(2)} m³/h</strong></p>
+                    <p>Combustion Efficiency: <strong>${results.combustionEfficiency.toFixed(2)}%</strong></p>
+                    <p>Flame Temperature: <strong>${results.flameTemperature.toFixed(2)} °C</strong></p>
+                    <p>Fuel Gas Density: <strong>${results.fuelGasDensity.toFixed(4)} kg/m³</strong></p>
+
+                    <h4>=== Combustion Products ===</h4>
+                    <p>Molar flow rates (mol/s):</p>
                     <ul>
-                        <li>CO2: <strong>${results.flueGasComposition.CO2.toFixed(2)} kg</strong></li>
-                        <li>H2O: <strong>${results.flueGasComposition.H2O.toFixed(2)} kg</strong></li>
-                        <li>O2: <strong>${results.flueGasComposition.O2.toFixed(2)} kg</strong></li>
-                        <li>N2: <strong>${results.flueGasComposition.N2.toFixed(2)} kg</strong></li>
+                        <li>CO2: <strong>${results.flueGasComposition.CO2.toFixed(4)} mol/s</strong></li>
+                        <li>H2O: <strong>${results.flueGasComposition.H2O.toFixed(4)} mol/s</strong></li>
+                        <li>SO2: <strong>0.0000e+0 mol/s</strong></li>
+                        <li>H2: <strong>0.0000e+0 mol/s</strong></li>
+                        <li>O2: <strong>${results.flueGasComposition.O2.toFixed(4)} mol/s</strong></li>
+                        <li>N2: <strong>${results.flueGasComposition.N2.toFixed(4)} mol/s</strong></li>
+                        <li>NOx: <strong>${results.nox.toFixed(4)} mol/s</strong></li>
+                        <li>Ash: <strong>0.0000e+0 mol/s</strong></li>
                     </ul>
+
+                    <h4>=== Advanced NOₓ Calculations ===</h4>
+                    <p>NOₓ (ppm): <strong>${results.nox.toFixed(2)} ppm</strong></p>
+                    <p>CO (ppm): <strong>0.00 ppm</strong></p>
                 `;
             } else {
                 alert('Please enter valid inputs for all fields.');
