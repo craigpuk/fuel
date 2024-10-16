@@ -1,5 +1,3 @@
-// worker.js
-
 onmessage = function(e) {
   const {
     mixture,
@@ -280,7 +278,7 @@ function performCalculations(
   }
 
   // Calculate Fuel Gas Density
-  const fuelGasDensity = (totalMolarMass) / (22.414 * (pressureBar / 1)); // kg/m³ at standard conditions
+  const fuelGasDensity = calculateGasDensity(totalMolarMass, pressureBar, temperatureK);
 
   return {
     nFuel,
@@ -312,6 +310,18 @@ function performCalculations(
     totalLHV,
     totalHHV
   };
+}
+
+// Updated gas density calculation function
+function calculateGasDensity(totalMolarMass, pressureBar, temperatureK) {
+  const R = 8.314; // Universal gas constant J/(mol·K)
+  const pressurePa = pressureBar * 1e5; // Convert pressure from bar to Pascals
+  const molarMassKgPerMol = totalMolarMass / 1000; // Convert g/mol to kg/mol
+
+  // Ideal gas law: ρ = (P * M) / (R * T)
+  const gasDensity = (pressurePa * molarMassKgPerMol) / (R * temperatureK);
+
+  return gasDensity; // Density in kg/m³
 }
 
 // Function to calculate flame temperature (improved)
