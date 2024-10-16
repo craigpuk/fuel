@@ -1,5 +1,3 @@
-// worker.js
-
 onmessage = function(e) {
   const {
     mixture,
@@ -32,22 +30,7 @@ onmessage = function(e) {
   }
 };
 
-// Helper function to parse chemical formulas
-function parseFormula(formula) {
-  const regex = /([A-Z][a-z]?)(\d*)/g;
-  let match;
-  const composition = {};
-
-  while ((match = regex.exec(formula)) !== null) {
-    const element = match[1];
-    const count = match[2] ? parseInt(match[2]) : 1;
-    composition[element] = (composition[element] || 0) + count;
-  }
-
-  return composition;
-}
-
-// Core calculation logic
+// Calculation logic
 function performCalculations(
   mixture,
   temperatureC,
@@ -59,210 +42,208 @@ function performCalculations(
   inletAirTemperatureC,
   referenceO2
 ) {
-  const R = 8.314; // Universal gas constant J/(mol·K)
+  const R = 8.314; // J/(mol·K)
   const O2FractionInAir = 0.2095; // Oxygen fraction in air
 
   let totalMolarMass = 0;
   let totalLHV = 0;
   let totalHHV = 0;
-  let totalC = 0;
-  let totalH = 0;
-  let totalO = 0;
-  let totalN = 0;
-  let totalS = 0;
 
+  let moleFractions = [];
+  let O2RequiredPerMolFuel_components = [];
+  let totalMolesPerKgMixture = 0;
   let totalAshContent = 0;
   let totalMoistureContent = 0;
 
-  let molesPerFuel = [];
-
-  // Calculate total properties of the fuel mixture
   mixture.forEach(component => {
     const fuel = component.fuel;
     const weightFraction = component.percentage / 100;
     const molarMass = fuel.MolarMass;
 
-    // Validate molar mass
     if (!molarMass || molarMass <= 0) {
       throw new Error(`Invalid or undefined molar mass for ${fuel.Name}.`);
     }
 
+    const heatingValue = fuel.HeatingValue * (1 - (fuel.MoistureContent || 0) / 100);
     totalMolarMass += weightFraction * molarMass;
-    totalLHV += weightFraction * fuel.HeatingValue; // Lower Heating Value (LHV)
-    totalHHV += weightFraction * (fuel.HHV || 0); // Higher Heating Value (HHV)
+    totalLHV += weightFraction * heatingValue;
+    totalHHV += weightFraction * (fuel.HHV || 0);
+    totalAshContent += weightFraction * (fuel.AshContent || 0);
+    totalMoistureContent += weightFraction * (fuel.MoistureContent || 0);
 
-    totalC += weightFraction * (fuel.C || 0); // Carbon content (weight%)
-    totalH += weightFraction * (fuel.H || 0); // Hydrogen content (weight%)
-    totalO += weightFraction * (fuel.O || 0); // Oxygen content (weight%)
-    totalN += weightFraction * (fuel.N || 0); // Nitrogen content (weight%)
-    totalS += weightFraction * (fuel.S || 0); // Sulfur content (weight%)
+    const combustibleFraction = 1 - ((fuel.AshContent || 0) + (fuel.MoistureContent || 0)) / 100;
+    const molesPerKg = (weightFraction * combustibleFraction * 1000) / molarMass;
+    totalMolesPerKgMixture += molesPerKg;
 
-    totalAshContent += weightFraction * (fuel.AshContent || 0); // Ash content
-    totalMoistureContent += weightFraction * (fuel.MoistureContent || 0); // Moisture content
+    const C = (fuel.C || 0);
+    const H = (fuel.H || 0);
+    const S = (fuel.S || 0);
+    const O = (fuel.O || 0);
+    const N = (fuel.N || 0);
 
-    const moles = (weightFraction * 1000) / molarMass; // mol/kg
-    molesPerFuel.push(moles);
+    const O2RequiredPerMolFuel = C + H / 4 + S - O / 2;
+    O2RequiredPerMolFuel_components.push(O2RequiredPerMolFuel);
+    moleFractions.push(0);
   });
 
-  // Convert weight fractions to mole fractions
-  const totalMoles = molesPerFuel.reduce((acc, val) => acc + val, 0);
-  const moleFractions = molesPerFuel.map(moles => moles / totalMoles);
+  mixture.forEach((component, index) => {
+    const fuel = component.fuel;
+    const weightFraction = component.percentage / 100;
+    const molarMass = fuel.MolarMass;
+    const combustibleFraction = 1 - ((fuel.AshContent || 0) + (fuel.MoistureContent || 0)) / 100;
 
-  // Parse fuel formulas to get elemental composition
-  const fuelElementCounts = mixture.map(component => {
-    const formula = component.fuel.Formula;
-    const composition = parseFormula(formula);
-    return composition;
+    const molesPerKg = (weightFraction * combustibleFraction * 1000) / molarMass;
+    const moleFraction = molesPerKg / totalMolesPerKgMixture;
+    moleFractions[index] = moleFraction;
   });
 
-  // Calculate stoichiometric CO2 production per mole fuel
-  const stoichCO2 = moleFractions.reduce((acc, moleFraction, index) => {
-    const composition = fuelElementCounts[index];
-    const x = composition['C'] || 0; // Number of C atoms
-    return acc + moleFraction * x;
-  }, 0);
+  let O2RequiredPerMolFuel = 0;
+  O2RequiredPerMolFuel_components.forEach((O2Required, index) => {
+    O2RequiredPerMolFuel += moleFractions[index] * O2Required;
+  });
 
-  // Calculate stoichiometric oxygen requirement per mole fuel
-  const stoichO2 = moleFractions.reduce((acc, moleFraction, index) => {
-    const composition = fuelElementCounts[index];
-    const x = composition['C'] || 0;
-    const y = composition['H'] || 0;
-    const z = composition['O'] || 0;
-    const requiredO2 = x + y / 4 - z / 2;
-    return acc + moleFraction * requiredO2;
-  }, 0);
-
-  if (stoichO2 <= 0) {
+  if (O2RequiredPerMolFuel <= 0) {
     throw new Error('Invalid fuel composition leading to non-positive oxygen requirement.');
   }
 
-  const airRequired = stoichO2 / O2FractionInAir; // mol O2 per mol fuel
-
+  const airRequiredPerMolFuel = O2RequiredPerMolFuel / O2FractionInAir;
   const excessAirFraction = excessAirPercentage / 100;
 
-  // Temperature and pressure conversions
-  const temperatureK = temperatureC + 273.15;
   const inletAirTemperatureK = inletAirTemperatureC + 273.15;
+  const temperatureK = temperatureC + 273.15;
   const pressurePa = pressureBar * 1e5;
 
-  // Calculate fuel flow rate in mol/s
   let nFuel;
   if (isMassFlowRate) {
-    const fuelFlowRateKgs = fuelFlowRateInput / 3600; // kg/h to kg/s
-    nFuel = fuelFlowRateKgs / (totalMolarMass / 1000); // mol/s
+    const fuelFlowRateKgs = fuelFlowRateInput / 3600;
+    nFuel = fuelFlowRateKgs / (totalMolarMass / 1000);
   } else {
-    const fuelFlowRateM3s = fuelFlowRateInput / 3600; // m³/h to m³/s
-    const fuelGasDensity = calculateGasDensity(totalMolarMass, pressureBar, temperatureK);
-    nFuel = (pressurePa * fuelFlowRateM3s) / (R * temperatureK); // mol/s using Ideal Gas Law
+    const fuelFlowRateM3s = fuelFlowRateInput / 3600;
+    nFuel = (pressurePa * fuelFlowRateM3s) / (R * temperatureK);
   }
 
-  // Calculate air flow rate required for combustion
-  const nAir = nFuel * airRequired * (1 + excessAirFraction); // mol/s
+  const nAir = nFuel * airRequiredPerMolFuel * (1 + excessAirFraction);
 
-  // Calculate air flow rate in m³/h using Ideal Gas Law
-  const airFlowRateM3s = (nAir * R * inletAirTemperatureK) / pressurePa; // m³/s
-  const airFlowRateM3h = airFlowRateM3s * 3600; // m³/h
+  const airFlowRateM3s = (nAir * R * inletAirTemperatureK) / pressurePa;
+  const airFlowRateM3h = airFlowRateM3s * 3600;
+  const airFlowRateKgs = nAir * 28.97e-3;
+  const airFlowRateKgh = airFlowRateKgs * 3600;
 
-  // Calculate combustion products
-  const nCO2 = stoichCO2 * nFuel; // mol/s
-  const nH2O = (totalH / 100 * nFuel * (4)) / 2; // mol/s (assuming H2O per mole H)
-  const nSO2 = (totalS / 100 * nFuel); // mol/s (assuming SO2 per mole S)
-  let nO2Excess = nAir * O2FractionInAir - stoichO2 * nFuel; // mol/s
+  let airFlowRate;
+  let flowRateUnit;
+  if (isMassFlowRate) {
+    airFlowRate = airFlowRateKgh;
+    flowRateUnit = 'kg/h';
+  } else {
+    airFlowRate = airFlowRateM3h;
+    flowRateUnit = 'm³/h';
+  }
+
+  let combustionEfficiency;
+  if (excessAirFraction >= 0) {
+    combustionEfficiency = 100;
+  } else {
+    combustionEfficiency = (1 + excessAirFraction) * 100;
+    if (combustionEfficiency < 0) combustionEfficiency = 0;
+  }
+  const combustionEfficiencyFraction = combustionEfficiency / 100;
+
+  const nFuelCombusted = nFuel * combustionEfficiencyFraction;
+  const nUnburnedFuel = nFuel - nFuelCombusted;
+  const nN2Air = nAir * (1 - O2FractionInAir);
+
+  const totalC = mixture.reduce((sum, component, index) => sum + moleFractions[index] * (component.fuel.C || 0), 0);
+  const totalH = mixture.reduce((sum, component, index) => sum + moleFractions[index] * (component.fuel.H || 0), 0);
+  const totalS = mixture.reduce((sum, component, index) => sum + moleFractions[index] * (component.fuel.S || 0), 0);
+  const totalO = mixture.reduce((sum, component, index) => sum + moleFractions[index] * (component.fuel.O || 0), 0);
+  const totalN = mixture.reduce((sum, component, index) => sum + moleFractions[index] * (component.fuel.N || 0), 0);
+
+  const nC = totalC * nFuelCombusted;
+  const nH = totalH * nFuelCombusted;
+  const nS = totalS * nFuelCombusted;
+  const nO = totalO * nFuelCombusted;
+  const nNFuel = totalN * nFuelCombusted;
+
+  const nCO2 = nC;
+  const nH2O = nH / 2;
+  const nSO2 = nS;
+  const nCO = (nUnburnedFuel / nFuelCombusted) * nC;
+  const nUnburnedH2 = (totalH * nUnburnedFuel) / 2;
+  const nAsh = nFuel * (totalAshContent / 100);
+
+  const nO2Consumed = nFuelCombusted * O2RequiredPerMolFuel;
+  const nO2Supplied = nAir * O2FractionInAir;
+  let nO2Excess = nO2Supplied - nO2Consumed;
   if (nO2Excess < 0) nO2Excess = 0;
-  const nN2 = nAir * (1 - O2FractionInAir); // mol/s
 
-  // Calculate true combustion efficiency
-  // Assuming actual CO2 equals stoichCO2 * nFuel for complete combustion
-  // If incomplete combustion, actual CO2 < stoichCO2 * nFuel
-  // Without actual measurements, assume complete combustion (100%)
-  const actualCO2 = nCO2; // mol/s
-  const combustionEfficiency = (actualCO2 / (stoichCO2 * nFuel)) * 100; // Should be 100%
+  let nN2 = nN2Air + nNFuel;
 
-  // Calculate heat released by flue gas
-  const deltaT = flueGasTemperatureC - inletAirTemperatureC; // °C = K difference
+  const heatingValuePerMol = totalLHV * totalMolarMass / 1000;
+  const totalMolesProducts = nCO2 + nH2O + nSO2 + nCO + nUnburnedH2 + nO2Excess + nN2 + nAsh;
+  const flameTemperatureK = calculateFlameTemperature(temperatureK, nFuelCombusted, totalMolesProducts, heatingValuePerMol);
 
-  const Cp_CO2 = 37; // J/(mol·K)
-  const Cp_H2O = 33; // J/(mol·K)
-  const Cp_SO2 = 29; // J/(mol·K)
-  const Cp_O2 = 29; // J/(mol·K)
-  const Cp_N2 = 29; // J/(mol·K)
-  const Cp_NOx = 37; // J/(mol·K)
-
-  // Assume NOx is negligible unless calculated
-  const heatReleased = (nCO2 * Cp_CO2 + nH2O * Cp_H2O + nSO2 * Cp_SO2 + nO2Excess * Cp_O2 + nN2 * Cp_N2) * deltaT; // J/s
-
-  // Calculate heat input from fuel
-  const fuelFlowRateMass_s = isMassFlowRate ? (fuelFlowRateInput / 3600) : (fuelFlowRateInput / 3600) * calculateGasDensity(totalMolarMass, pressureBar, temperatureK);
-  const heatInput = fuelFlowRateMass_s * (totalLHV * 1e6); // J/s
-
-  // Calculate thermal combustion efficiency
-  const thermalCombustionEfficiency = (heatReleased / heatInput) * 100;
-
-  // Calculate fuel gas density
-  const fuelGasDensity = calculateGasDensity(totalMolarMass, pressureBar, temperatureK);
-
-  // Estimate NOx emissions based on flame temperature and excess air
-  const flameTemperatureK = calculateFlameTemperature(temperatureK, nFuel, nCO2 + nH2O + nSO2 + nO2Excess + nN2, totalLHV);
   const NOx_ppm = estimateNOx(flameTemperatureK, excessAirFraction);
-  const nNOx = nN2 * NOx_ppm / 1e6; // mol/s (ppm to mol/s)
-  const adjustedN2 = nN2 - nNOx;
+  const nNOx = nN2 * NOx_ppm / 1e6;
+  nN2 -= nNOx;
 
-  // Calculate SOx emissions
-  const totalMolesWet = nCO2 + nH2O + nSO2 + nO2Excess + adjustedN2 + nNOx;
-  const SOx_ppm = (nSO2 / totalMolesWet) * 1e6; // ppm
+  const totalMolesWet = totalMolesProducts + nNOx;
+  const SOx_ppm = (nSO2 / totalMolesWet) * 1e6;
 
-  // Calculate CO emissions (assuming incomplete combustion proportional to efficiency)
-  let CO_ppm = 0;
-  if (combustionEfficiency < 100) {
-    // Simplified assumption: lower efficiency leads to some CO formation
-    CO_ppm = ((100 - combustionEfficiency) / 100) * 1000; // ppm (arbitrary scaling)
-  }
-
-  // Calculate volume percentages (wet basis)
   const volumePercentagesWet = {
     CO2: (nCO2 / totalMolesWet) * 100,
     H2O: (nH2O / totalMolesWet) * 100,
     SO2: (nSO2 / totalMolesWet) * 100,
+    H2: (nUnburnedH2 / totalMolesWet) * 100,
     O2: (nO2Excess / totalMolesWet) * 100,
-    N2: (adjustedN2 / totalMolesWet) * 100,
+    N2: (nN2 / totalMolesWet) * 100,
     NOx: (nNOx / totalMolesWet) * 100,
-    Ash: 0 // Assuming ash is not gaseous; adjust if necessary
+    Ash: (nAsh / totalMolesWet) * 100
   };
 
-  // Calculate volume percentages (dry basis)
   const totalMolesDry = totalMolesWet - nH2O;
   const volumePercentagesDry = {
     CO2: (nCO2 / totalMolesDry) * 100,
     SO2: (nSO2 / totalMolesDry) * 100,
+    H2: (nUnburnedH2 / totalMolesDry) * 100,
     O2: (nO2Excess / totalMolesDry) * 100,
-    N2: (adjustedN2 / totalMolesDry) * 100,
+    N2: (nN2 / totalMolesDry) * 100,
     NOx: (nNOx / totalMolesDry) * 100,
-    Ash: 0 // Assuming ash is not gaseous; adjust if necessary
+    Ash: (nAsh / totalMolesDry) * 100
   };
 
-  // Advanced NOx Calculations
   const measuredO2 = volumePercentagesDry.O2;
+
   const NOx_normalized = NOx_ppm * 2.0536;
   const NOx_flue_gas_temp = NOx_ppm * 2.0536 * (273 / (273 + flueGasTemperatureC));
   const NOx_corrected_O2_normalized = NOx_normalized * ((21 - referenceO2) / (21 - measuredO2));
   const NOx_corrected_O2_actual = NOx_flue_gas_temp * ((21 - referenceO2) / (21 - measuredO2));
 
+  let CO_ppm = 0;
+  if (combustionEfficiencyFraction < 1) {
+    CO_ppm = (nCO / totalMolesWet) * 1e6;
+  }
+
+  const fuelGasDensity = calculateGasDensity(totalMolarMass, pressureBar, temperatureK);
+
   return {
-    totalMolarMass,
-    totalLHV,
-    totalHHV,
     nFuel,
     nAir,
-    airFlowRateM3h,
-    trueCombustionEfficiency: combustionEfficiency,
-    thermalCombustionEfficiency,
+    airFlowRate,
+    flowRateUnit,
     nCO2,
     nH2O,
     nSO2,
-    nO2Excess: nO2Excess,
-    nN2: adjustedN2,
+    nCO,
+    nUnburnedH2,
+    nO2Excess,
+    nN2,
     nNOx,
+    nAsh,
     SOx_ppm,
+    volumePercentagesWet,
+    volumePercentagesDry,
+    combustionEfficiency,
+    flameTemperatureK,
     NOx_ppm,
     NOx_normalized,
     NOx_flue_gas_temp,
@@ -270,40 +251,38 @@ function performCalculations(
     NOx_corrected_O2_actual,
     CO_ppm,
     fuelGasDensity,
-    volumePercentagesWet,
-    volumePercentagesDry
+    totalMolarMass,
+    totalLHV,
+    totalHHV
   };
 }
 
-// Function to calculate gas density using Ideal Gas Law
+// Updated gas density calculation function
 function calculateGasDensity(totalMolarMass, pressureBar, temperatureK) {
-  const R = 8.314; // J/(mol·K)
-  const pressurePa = pressureBar * 1e5; // Convert bar to Pa
-  const molarMassKgPerMol = totalMolarMass / 1000; // g/mol to kg/mol
+  const R = 8.314;
+  const pressurePa = pressureBar * 1e5;
+  const molarMassKgPerMol = totalMolarMass / 1000;
 
-  const gasDensity = (pressurePa * molarMassKgPerMol) / (R * temperatureK); // kg/m³
+  const gasDensity = (pressurePa * molarMassKgPerMol) / (R * temperatureK);
 
   return gasDensity;
 }
 
-// Function to calculate flame temperature (simplified)
 function calculateFlameTemperature(T_initial, nFuelCombusted, totalMolesProducts, heatingValuePerMol) {
-  const Cp_products = 37; // J/(mol·K), average specific heat capacity
-  const heatReleased = nFuelCombusted * heatingValuePerMol * 1e6; // MJ/mol to J/mol
-  const deltaT = heatReleased / (totalMolesProducts * Cp_products); // K
+  const Cp_products = 37;
+  const heatReleased = nFuelCombusted * heatingValuePerMol * 1e6;
+  const deltaT = heatReleased / (totalMolesProducts * Cp_products);
 
-  return T_initial + deltaT; // Kelvin
+  return T_initial + deltaT;
 }
 
-// Function to estimate NOx emissions (ppm) based on flame temperature and excess air
 function estimateNOx(flameTemperatureK, excessAirFraction) {
-  // Empirical correlation for thermal NOx formation
-  const A = 1e-5; // Empirical constant
-  const B = 0.0006; // Empirical constant
-  const C = 0.5; // Empirical constant
-  const O2_percent = excessAirFraction * 100; // Excess O2 percentage
+  const A = 1e-5;
+  const B = 0.0006;
+  const C = 0.5;
+  const O2_percent = excessAirFraction * 100;
 
-  const NOx_ppm = A * Math.exp(B * (flameTemperatureK - 2000)) * Math.pow(O2_percent + 1, C) * 1e6; // ppm
+  const NOx_ppm = A * Math.exp(B * (flameTemperatureK - 2000)) * Math.pow(O2_percent + 1, C) * 1e6;
 
   return NOx_ppm;
 }
