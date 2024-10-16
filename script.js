@@ -232,6 +232,26 @@ function initWorker(
 // Display results in the output section
 function displayResults(results) {
   const output = document.getElementById('output');
+  
+  // Ensure all required properties are present
+  const requiredProps = [
+    'totalMolarMass', 'totalLHV', 'totalHHV', 'nFuel', 'nAir',
+    'airFlowRateM3h', 'trueCombustionEfficiency', 'thermalCombustionEfficiency',
+    'nCO2', 'nH2O', 'nSO2', 'nO2Excess', 'nN2', 'nNOx',
+    'SOx_ppm', 'NOx_ppm', 'NOx_normalized', 'NOx_flue_gas_temp',
+    'NOx_corrected_O2_normalized', 'NOx_corrected_O2_actual',
+    'CO_ppm', 'fuelGasDensity', 'volumePercentagesWet', 'volumePercentagesDry'
+  ];
+
+  for (let prop of requiredProps) {
+    if (results[prop] === undefined || results[prop] === null) {
+      console.error(`Missing property in results: ${prop}`);
+      alert(`Calculation error: Missing property ${prop}. Please check the input data.`);
+      return;
+    }
+  }
+
+  // Format and display results
   output.innerHTML = `
     <h3>Combustion Results</h3>
     <p><strong>Fuel Mixture Properties:</strong></p>
@@ -251,6 +271,7 @@ function displayResults(results) {
     <p><strong>Combustion Efficiency:</strong></p>
     <ul>
       <li>True Combustion Efficiency: ${results.trueCombustionEfficiency.toFixed(2)}%</li>
+      <li>Thermal Combustion Efficiency: ${results.thermalCombustionEfficiency.toFixed(2)}%</li>
     </ul>
 
     <p><strong>Combustion Products:</strong></p>
@@ -260,14 +281,13 @@ function displayResults(results) {
       <li>SO₂: ${results.nSO2.toFixed(4)} mol/s</li>
       <li>Excess O₂: ${results.nO2Excess.toFixed(4)} mol/s</li>
       <li>N₂: ${results.nN2.toFixed(4)} mol/s</li>
+      <li>NOₓ: ${results.nNOx.toFixed(4)} mol/s</li>
     </ul>
 
-    <p><strong>Additional Information:</strong></p>
+    <p><strong>Emissions:</strong></p>
     <ul>
-      <li>Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³</li>
-      <li>Flame Temperature: ${(results.flameTemperatureK - 273.15).toFixed(2)} °C</li>
-      <li>NOₓ Emissions: ${results.NOx_ppm.toFixed(2)} ppm</li>
       <li>SOₓ Emissions: ${results.SOx_ppm.toFixed(2)} ppm</li>
+      <li>NOₓ Emissions: ${results.NOx_ppm.toFixed(2)} ppm</li>
       <li>CO Emissions: ${results.CO_ppm.toFixed(2)} ppm</li>
     </ul>
 
@@ -276,7 +296,6 @@ function displayResults(results) {
       <li>CO₂: ${results.volumePercentagesWet.CO2.toFixed(2)}%</li>
       <li>H₂O: ${results.volumePercentagesWet.H2O.toFixed(2)}%</li>
       <li>SO₂: ${results.volumePercentagesWet.SO2.toFixed(2)}%</li>
-      <li>H₂: ${results.volumePercentagesWet.H2.toFixed(2)}%</li>
       <li>O₂: ${results.volumePercentagesWet.O2.toFixed(2)}%</li>
       <li>N₂: ${results.volumePercentagesWet.N2.toFixed(2)}%</li>
       <li>NOₓ: ${results.volumePercentagesWet.NOx.toFixed(2)}%</li>
@@ -287,7 +306,6 @@ function displayResults(results) {
     <ul>
       <li>CO₂: ${results.volumePercentagesDry.CO2.toFixed(2)}%</li>
       <li>SO₂: ${results.volumePercentagesDry.SO2.toFixed(2)}%</li>
-      <li>H₂: ${results.volumePercentagesDry.H2.toFixed(2)}%</li>
       <li>O₂: ${results.volumePercentagesDry.O2.toFixed(2)}%</li>
       <li>N₂: ${results.volumePercentagesDry.N2.toFixed(2)}%</li>
       <li>NOₓ: ${results.volumePercentagesDry.NOx.toFixed(2)}%</li>
@@ -296,16 +314,15 @@ function displayResults(results) {
 
     <p><strong>Advanced NOₓ Calculations:</strong></p>
     <ul>
-      <li>NOₓ (ppm): ${results.NOx_ppm.toFixed(2)} ppm</li>
-      <li>NOₓ_normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)} mg/Nm³</li>
-      <li>NOₓ_flue_gas_temp (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)} mg/Am³</li>
-      <li>NOₓ_corrected_O₂_normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)} mg/Nm³</li>
-      <li>NOₓ_corrected_O₂_actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)} mg/Am³</li>
+      <li>NOₓ Normalized (mg/Nm³): ${results.NOx_normalized.toFixed(2)} mg/Nm³</li>
+      <li>NOₓ Flue Gas Temperature Corrected (mg/Am³): ${results.NOx_flue_gas_temp.toFixed(2)} mg/Am³</li>
+      <li>NOₓ Corrected for O₂ Normalized (mg/Nm³): ${results.NOx_corrected_O2_normalized.toFixed(2)} mg/Nm³</li>
+      <li>NOₓ Corrected for O₂ Actual (mg/Am³): ${results.NOx_corrected_O2_actual.toFixed(2)} mg/Am³</li>
     </ul>
 
-    <p><strong>CO Calculations:</strong></p>
+    <p><strong>Fuel Gas Properties:</strong></p>
     <ul>
-      <li>CO (ppm): ${results.CO_ppm.toFixed(2)} ppm</li>
+      <li>Fuel Gas Density: ${results.fuelGasDensity.toFixed(4)} kg/m³</li>
     </ul>
 
     <p><strong>Notes:</strong></p>
