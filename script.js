@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayResults(resultsDiv, results);
         } catch (error) {
             alert(error.message);
+            console.error(error);
         }
     });
 });
@@ -91,7 +92,6 @@ function getFuelData(type) {
 }
 
 function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessAir) {
-    // Placeholder for results
     const results = {
         elementalAnalysis: [],
         combustionProducts: [],
@@ -100,14 +100,19 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
     };
 
     fuels.forEach(fuel => {
-        // Validate that the sum of percentages is 100%
-        const totalPercentage = Object.values(fuel.composition).reduce((sum, val) => sum + val, 0);
-        if (Math.abs(totalPercentage - 100) > 0.01) {
-            throw new Error(`The total elemental percentages for ${fuel.type} fuel do not add up to 100%.`);
+        const massPercentages = fuel.composition;
+
+        // Validate that the sum of percentages is approximately 100%
+        const totalPercentage = Object.values(massPercentages).reduce((sum, val) => sum + val, 0);
+        if (Math.abs(totalPercentage - 100) > 1) {
+            throw new Error(`The total elemental percentages for ${fuel.type} fuel do not add up to 100%. Total is ${totalPercentage.toFixed(2)}%.`);
         }
 
-        // Elemental mass percentages
-        const massPercentages = fuel.composition;
+        // Normalize percentages to exactly 100% for calculations
+        const normalizationFactor = 100 / totalPercentage;
+        for (let key in massPercentages) {
+            massPercentages[key] *= normalizationFactor;
+        }
 
         // Convert percentages to fractions
         const C = massPercentages.carbon / 100;
@@ -119,8 +124,8 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         const Moisture = massPercentages.water / 100;
 
         // Calculate GCV and NCV using Dulong's formula (in MJ/kg)
-        const GCV = (338 * C) + (1442 * (H - (O / 8))) + (93 * S);
-        const NCV = GCV - (24.4 * H * 1000); // Adjusted to account for latent heat (in kJ/kg)
+        const GCV = (338.2 * C) + (1442.8 * (H - (O / 8))) + (94.2 * S);
+        const NCV = GCV - (24.4 * H * 1000) / 1000; // Adjusted to MJ/kg
 
         // Stoichiometric air requirement (kg/kg)
         const stoichAir = (
@@ -136,7 +141,7 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         // Combustion products per kg of fuel
         const combustionProducts = {
             CO2: C * (44 / 12),
-            H2O: H * (18 / 2),
+            H2O: H * (9 / 1), // From H2 in fuel to H2O
             SO2: S * (64 / 32),
             N2: (actualAir * 0.79) + N,
             O2: actualAir * 0.21 * excessAir,
@@ -144,19 +149,19 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         };
 
         results.elementalAnalysis.push({
-            fuelType: fuel.type.charAt(0).toUpperCase() + fuel.type.slice(1),
+            fuelType: capitalizeFirstLetter(fuel.type),
             massPercentages
         });
 
         results.combustionProducts.push({
-            fuelType: fuel.type.charAt(0).toUpperCase() + fuel.type.slice(1),
+            fuelType: capitalizeFirstLetter(fuel.type),
             combustionProducts
         });
 
         results.calorificValues.push({
-            fuelType: fuel.type.charAt(0).toUpperCase() + fuel.type.slice(1),
+            fuelType: capitalizeFirstLetter(fuel.type),
             GCV: GCV.toFixed(2),
-            NCV: (NCV / 1000).toFixed(2) // Converted to MJ/kg
+            NCV: NCV.toFixed(2)
         });
     });
 
@@ -167,20 +172,17 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
 }
 
 function combineResults(fuels, results) {
-    // Combine the elemental mass percentages and combustion products
     const combined = {
         elementalMassPercentages: {},
         combustionProducts: {},
         calorificValues: {}
     };
 
-    // Initialize sums
     const totalFlowRate = fuels.reduce((sum, fuel) => sum + fuel.flowRate, 0);
 
     const elements = ['carbon', 'hydrogen', 'sulphur', 'nitrogen', 'oxygen', 'water', 'argon', 'ash'];
     const products = ['CO2', 'H2O', 'SO2', 'N2', 'O2', 'Ash'];
 
-    // Initialize combined percentages
     elements.forEach(element => {
         combined.elementalMassPercentages[element] = 0;
     });
@@ -189,11 +191,9 @@ function combineResults(fuels, results) {
         combined.combustionProducts[product] = 0;
     });
 
-    // Initialize calorific values
     let totalGCV = 0;
     let totalNCV = 0;
 
-    // Weighted average of elemental mass percentages and calorific values
     results.elementalAnalysis.forEach((analysis, index) => {
         const fuel = fuels[index];
         const weightFactor = fuel.flowRate / totalFlowRate;
@@ -208,7 +208,6 @@ function combineResults(fuels, results) {
         totalNCV += NCV * weightFactor;
     });
 
-    // Sum of combustion products
     results.combustionProducts.forEach((productData, index) => {
         const fuel = fuels[index];
         const weightFactor = fuel.flowRate / totalFlowRate;
@@ -359,7 +358,6 @@ function createCalorificTable(data) {
 }
 
 function formatChemicalSymbol(symbol) {
-    // Map for chemical symbols
     const symbolMap = {
         carbon: 'C',
         hydrogen: 'H',
@@ -377,4 +375,8 @@ function formatChemicalSymbol(symbol) {
         Ash: 'Ash'
     };
     return symbolMap[symbol] || symbol;
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
