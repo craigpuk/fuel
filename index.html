@@ -1,111 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Fuel Analysis and Combustion Simulation</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>Fuel Analysis and Combustion Simulation</h1>
-    <div id="app">
-        <form id="fuel-form">
-            <!-- Fuel Input and Operational Parameters -->
-            <div class="container">
-                <!-- Fuel Input -->
-                <div class="fuel-input">
-                    <h2>Fuel Input</h2>
-                    <!-- Gas Fuel -->
-                    <div class="fuel-section">
-                        <h3>Gas Fuel</h3>
-                        <label>
-                            <input type="checkbox" id="gas-used" checked>
-                            Use Gas Fuel
-                        </label>
-                        <div id="gas-inputs">
-                            <div class="input-grid">
-                                <label for="gas-flow">Flow Rate (m³/h):</label>
-                                <input type="number" id="gas-flow" step="any" required>
-                                
-                                <label for="gas-carbon">Carbon (%) :</label>
-                                <input type="number" id="gas-carbon" step="any" required>
-                                
-                                <label for="gas-hydrogen">Hydrogen (%) :</label>
-                                <input type="number" id="gas-hydrogen" step="any" required>
-                                
-                                <label for="gas-sulphur">Sulphur (%) :</label>
-                                <input type="number" id="gas-sulphur" step="any" required>
-                                
-                                <label for="gas-nitrogen">Nitrogen (%) :</label>
-                                <input type="number" id="gas-nitrogen" step="any" required>
-                                
-                                <label for="gas-oxygen">Oxygen (%) :</label>
-                                <input type="number" id="gas-oxygen" step="any" required>
-                                
-                                <label for="gas-water">Water (%) :</label>
-                                <input type="number" id="gas-water" step="any" required>
-                                
-                                <label for="gas-argon">Argon (%) :</label>
-                                <input type="number" id="gas-argon" step="any" required>
-                                
-                                <label for="gas-ash">Ash (%) :</label>
-                                <input type="number" id="gas-ash" step="any" required>
-                            </div>
-                        </div>
-                    </div>
-    
-                    <!-- Solid Fuel -->
-                    <div class="fuel-section">
-                        <h3>Solid Fuel</h3>
-                        <label>
-                            <input type="checkbox" id="solid-used">
-                            Use Solid Fuel
-                        </label>
-                        <div id="solid-inputs" class="hidden">
-                            <!-- Solid fuel inputs here -->
-                            <!-- For brevity, inputs are omitted as the solid fuel is not used -->
-                        </div>
-                    </div>
-    
-                    <!-- Liquid Fuel -->
-                    <div class="fuel-section">
-                        <h3>Liquid Fuel</h3>
-                        <label>
-                            <input type="checkbox" id="liquid-used">
-                            Use Liquid Fuel
-                        </label>
-                        <div id="liquid-inputs" class="hidden">
-                            <!-- Liquid fuel inputs here -->
-                            <!-- For brevity, inputs are omitted as the liquid fuel is not used -->
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Operational Parameters -->
-                <div class="operational-parameters">
-                    <h2>Operational Parameters</h2>
-                    <div class="input-grid">
-                        <label for="gas-pressure">Gas Pressure (bar):</label>
-                        <input type="number" id="gas-pressure" step="any" required>
-                        
-                        <label for="fuel-temp">Fuel Temperature (°C):</label>
-                        <input type="number" id="fuel-temp" step="any" required>
-                        
-                        <label for="air-inlet-temp">Air Inlet Temperature (°C):</label>
-                        <input type="number" id="air-inlet-temp" step="any" required>
-                        
-                        <label for="excess-air">Excess Air (%):</label>
-                        <input type="number" id="excess-air" step="any" required>
-                    </div>
-    
-                    <button type="submit">Calculate</button>
-                </div>
-            </div>
-        </form>
-    
-        <h2>Results</h2>
-        <div id="results"></div>
-    </div>
-    
-    <script src="script.js"></script>
-</body>
-</html>
+/* No changes made to the CSS */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    color: #2c3e50;
+}
+
+h1, h2, h3 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.fuel-input, .operational-parameters {
+    flex: 1 1 48%;
+    box-sizing: border-box;
+}
+
+.fuel-section {
+    border: 1px solid #bdc3c7;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.fuel-section h3 {
+    margin-top: 0;
+}
+
+label {
+    margin-bottom: 5px;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #2980b9;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+#results {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 10px;
+    row-gap: 10px;
+}
+
+.input-grid label {
+    grid-column: 1 / 2;
+}
+
+.input-grid input {
+    grid-column: 2 / 3;
+}
+
+.fuel-input, .operational-parameters {
+    max-width: 48%;
+}
+
+.result-section {
+    margin-bottom: 30px;
+}
+
+.result-section h3 {
+    border-bottom: 2px solid #bdc3c7;
+    padding-bottom: 5px;
+}
+
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.result-table th, .result-table td {
+    border: 1px solid #bdc3c7;
+    padding: 8px;
+    text-align: left;
+}
+
+.result-table th {
+    background-color: #ecf0f1;
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 800px) {
+    .container {
+        flex-direction: column;
+    }
+    .fuel-input, .operational-parameters {
+        max-width: 100%;
+    }
+}
