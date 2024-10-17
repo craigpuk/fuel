@@ -51,11 +51,15 @@ document.addEventListener('DOMContentLoaded', () => {
             fuels.push(liquidFuel);
         }
 
-        // Perform calculations
-        const results = calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessAir);
+        try {
+            // Perform calculations
+            const results = calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessAir);
 
-        // Display results
-        displayResults(resultsDiv, results);
+            // Display results
+            displayResults(resultsDiv, results);
+        } catch (error) {
+            alert(error.message);
+        }
     });
 });
 
@@ -91,6 +95,7 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
     const results = {
         elementalAnalysis: [],
         combustionProducts: [],
+        calorificValues: [],
         combined: {}
     };
 
@@ -98,19 +103,31 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         // Validate that the sum of percentages is 100%
         const totalPercentage = Object.values(fuel.composition).reduce((sum, val) => sum + val, 0);
         if (Math.abs(totalPercentage - 100) > 0.01) {
-            alert(`The total elemental percentages for ${fuel.type} fuel do not add up to 100%.`);
-            throw new Error(`Invalid elemental percentages for ${fuel.type} fuel.`);
+            throw new Error(`The total elemental percentages for ${fuel.type} fuel do not add up to 100%.`);
         }
 
         // Elemental mass percentages
         const massPercentages = fuel.composition;
 
+        // Convert percentages to fractions
+        const C = massPercentages.carbon / 100;
+        const H = massPercentages.hydrogen / 100;
+        const S = massPercentages.sulphur / 100;
+        const O = massPercentages.oxygen / 100;
+        const N = massPercentages.nitrogen / 100;
+        const Ash = massPercentages.ash / 100;
+        const Moisture = massPercentages.water / 100;
+
+        // Calculate GCV and NCV using Dulong's formula (in MJ/kg)
+        const GCV = (338 * C) + (1442 * (H - (O / 8))) + (93 * S);
+        const NCV = GCV - (24.4 * H * 1000); // Adjusted to account for latent heat (in kJ/kg)
+
         // Stoichiometric air requirement (kg/kg)
-        // Calculated based on combustion reactions
         const stoichAir = (
-            (massPercentages.carbon / 100) * (32 / 12) +
-            (massPercentages.hydrogen / 100) * (8 / 2) +
-            (massPercentages.sulphur / 100) * (32 / 32)
+            (C * (32 / 12)) +
+            (H * (8 / 2)) +
+            (S * (32 / 32)) -
+            (O)
         );
 
         // Adjusted air flow with excess air
@@ -118,12 +135,12 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
 
         // Combustion products per kg of fuel
         const combustionProducts = {
-            CO2: (massPercentages.carbon / 100) * (44 / 12),
-            H2O: (massPercentages.hydrogen / 100) * (9 / 2),
-            SO2: (massPercentages.sulphur / 100) * (64 / 32),
-            N2: (actualAir * 0.79) + (massPercentages.nitrogen / 100),
+            CO2: C * (44 / 12),
+            H2O: H * (18 / 2),
+            SO2: S * (64 / 32),
+            N2: (actualAir * 0.79) + N,
             O2: actualAir * 0.21 * excessAir,
-            Ash: massPercentages.ash / 100
+            Ash: Ash
         };
 
         results.elementalAnalysis.push({
@@ -134,6 +151,12 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         results.combustionProducts.push({
             fuelType: fuel.type.charAt(0).toUpperCase() + fuel.type.slice(1),
             combustionProducts
+        });
+
+        results.calorificValues.push({
+            fuelType: fuel.type.charAt(0).toUpperCase() + fuel.type.slice(1),
+            GCV: GCV.toFixed(2),
+            NCV: (NCV / 1000).toFixed(2) // Converted to MJ/kg
         });
     });
 
@@ -147,7 +170,8 @@ function combineResults(fuels, results) {
     // Combine the elemental mass percentages and combustion products
     const combined = {
         elementalMassPercentages: {},
-        combustionProducts: {}
+        combustionProducts: {},
+        calorificValues: {}
     };
 
     // Initialize sums
@@ -165,21 +189,36 @@ function combineResults(fuels, results) {
         combined.combustionProducts[product] = 0;
     });
 
-    // Weighted average of elemental mass percentages
+    // Initialize calorific values
+    let totalGCV = 0;
+    let totalNCV = 0;
+
+    // Weighted average of elemental mass percentages and calorific values
     results.elementalAnalysis.forEach((analysis, index) => {
         const fuel = fuels[index];
         const weightFactor = fuel.flowRate / totalFlowRate;
         elements.forEach(element => {
             combined.elementalMassPercentages[element] += analysis.massPercentages[element] * weightFactor;
         });
+
+        // Calorific values
+        const GCV = parseFloat(results.calorificValues[index].GCV);
+        const NCV = parseFloat(results.calorificValues[index].NCV);
+        totalGCV += GCV * weightFactor;
+        totalNCV += NCV * weightFactor;
     });
 
     // Sum of combustion products
-    results.combustionProducts.forEach((productData) => {
+    results.combustionProducts.forEach((productData, index) => {
+        const fuel = fuels[index];
+        const weightFactor = fuel.flowRate / totalFlowRate;
         products.forEach(product => {
-            combined.combustionProducts[product] += productData.combustionProducts[product];
+            combined.combustionProducts[product] += productData.combustionProducts[product] * weightFactor;
         });
     });
+
+    combined.calorificValues.GCV = totalGCV.toFixed(2);
+    combined.calorificValues.NCV = totalNCV.toFixed(2);
 
     return combined;
 }
@@ -189,33 +228,64 @@ function displayResults(container, results) {
 
     // Display Elemental Mass Percentage Analysis
     const elementalSection = document.createElement('div');
+    elementalSection.className = 'result-section';
     elementalSection.innerHTML = '<h3>Elemental Mass Percentage Analysis</h3>';
     results.elementalAnalysis.forEach(item => {
         const table = createTableFromObject(item.massPercentages, 'Element', 'Mass Percentage (%)', true);
-        elementalSection.appendChild(document.createElement('h4')).textContent = `${item.fuelType} Fuel`;
+        const heading = document.createElement('h4');
+        heading.textContent = `${item.fuelType} Fuel`;
+        elementalSection.appendChild(heading);
         elementalSection.appendChild(table);
     });
     container.appendChild(elementalSection);
 
+    // Display Calorific Values
+    const calorificSection = document.createElement('div');
+    calorificSection.className = 'result-section';
+    calorificSection.innerHTML = '<h3>Calorific Values</h3>';
+    results.calorificValues.forEach(item => {
+        const table = createCalorificTable(item);
+        calorificSection.appendChild(table);
+    });
+    container.appendChild(calorificSection);
+
     // Display Combustion Products
     const combustionSection = document.createElement('div');
+    combustionSection.className = 'result-section';
     combustionSection.innerHTML = '<h3>Combustion Products</h3>';
     results.combustionProducts.forEach(item => {
         const table = createTableFromObject(item.combustionProducts, 'Product', 'Amount (kg/kg fuel)', true);
-        combustionSection.appendChild(document.createElement('h4')).textContent = `${item.fuelType} Fuel Combustion Products`;
+        const heading = document.createElement('h4');
+        heading.textContent = `${item.fuelType} Fuel Combustion Products`;
+        combustionSection.appendChild(heading);
         combustionSection.appendChild(table);
     });
     container.appendChild(combustionSection);
 
     // Display Combined Results
     const combinedSection = document.createElement('div');
+    combinedSection.className = 'result-section';
     combinedSection.innerHTML = '<h3>Combined Results</h3>';
 
-    combinedSection.appendChild(document.createElement('h4')).textContent = 'Combined Elemental Mass Percentages';
+    const combinedElementalHeading = document.createElement('h4');
+    combinedElementalHeading.textContent = 'Combined Elemental Mass Percentages';
+    combinedSection.appendChild(combinedElementalHeading);
     const combinedElementalTable = createTableFromObject(results.combined.elementalMassPercentages, 'Element', 'Mass Percentage (%)', true);
     combinedSection.appendChild(combinedElementalTable);
 
-    combinedSection.appendChild(document.createElement('h4')).textContent = 'Combined Combustion Products';
+    const combinedCalorificHeading = document.createElement('h4');
+    combinedCalorificHeading.textContent = 'Combined Calorific Values';
+    combinedSection.appendChild(combinedCalorificHeading);
+    const combinedCalorificTable = createCalorificTable({
+        fuelType: 'Combined Fuel Mix',
+        GCV: results.combined.calorificValues.GCV,
+        NCV: results.combined.calorificValues.NCV
+    });
+    combinedSection.appendChild(combinedCalorificTable);
+
+    const combinedCombustionHeading = document.createElement('h4');
+    combinedCombustionHeading.textContent = 'Combined Combustion Products';
+    combinedSection.appendChild(combinedCombustionHeading);
     const combinedCombustionTable = createTableFromObject(results.combined.combustionProducts, 'Product', 'Amount', true);
     combinedSection.appendChild(combinedCombustionTable);
 
@@ -243,11 +313,46 @@ function createTableFromObject(obj, col1Header, col2Header, useChemicalSymbols) 
         const cell1 = document.createElement('td');
         cell1.innerHTML = useChemicalSymbols ? formatChemicalSymbol(key) : key;
         const cell2 = document.createElement('td');
-        cell2.textContent = obj[key].toFixed(2);
+        cell2.textContent = parseFloat(obj[key]).toFixed(3);
         row.appendChild(cell1);
         row.appendChild(cell2);
         tbody.appendChild(row);
     }
+    table.appendChild(tbody);
+
+    return table;
+}
+
+function createCalorificTable(data) {
+    const table = document.createElement('table');
+    table.className = 'result-table';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const col1 = document.createElement('th');
+    col1.textContent = 'Fuel Type';
+    const col2 = document.createElement('th');
+    col2.textContent = 'GCV (MJ/kg)';
+    const col3 = document.createElement('th');
+    col3.textContent = 'NCV (MJ/kg)';
+    headerRow.appendChild(col1);
+    headerRow.appendChild(col2);
+    headerRow.appendChild(col3);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const row = document.createElement('tr');
+    const cell1 = document.createElement('td');
+    cell1.textContent = data.fuelType;
+    const cell2 = document.createElement('td');
+    cell2.textContent = data.GCV;
+    const cell3 = document.createElement('td');
+    cell3.textContent = data.NCV;
+    row.appendChild(cell1);
+    row.appendChild(cell2);
+    row.appendChild(cell3);
+    tbody.appendChild(row);
     table.appendChild(tbody);
 
     return table;
