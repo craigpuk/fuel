@@ -124,29 +124,58 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
         const Moisture = massPercentages.water / 100;
 
         // Calculate GCV and NCV using Dulong's formula (in MJ/kg)
-        const GCV = (338.2 * C) + (1442.8 * (H - (O / 8))) + (94.2 * S);
-        const NCV = GCV - (24.4 * H * 1000) / 1000; // Adjusted to MJ/kg
+        const GCV = (0.3383 * massPercentages.carbon) + (1.442 * (massPercentages.hydrogen - (massPercentages.oxygen / 8))) + (0.0942 * massPercentages.sulphur);
+        const NCV = GCV - (2.442 * H * 100);
 
-        // Stoichiometric air requirement (kg/kg)
-        const stoichAir = (
-            (C * (32 / 12)) +
-            (H * (8 / 2)) +
-            (S * (32 / 32)) -
-            (O)
-        );
+        // Stoichiometric oxygen required (kg O2/kg fuel)
+        const O2_required = (C * (32 / 12)) + (H * (8 / 2)) + (S * (32 / 32)) - O;
+        // Stoichiometric air required (kg air/kg fuel)
+        const StoichAir = O2_required / 0.233; // Assuming air has 23.3% oxygen by mass
 
-        // Adjusted air flow with excess air
-        const actualAir = stoichAir * (1 + excessAir);
+        // Actual air with excess air
+        const ActualAir = StoichAir * (1 + excessAir);
 
-        // Combustion products per kg of fuel
-        const combustionProducts = {
-            CO2: C * (44 / 12),
-            H2O: H * (9 / 1), // From H2 in fuel to H2O
-            SO2: S * (64 / 32),
-            N2: (actualAir * 0.79) + N,
-            O2: actualAir * 0.21 * excessAir,
-            Ash: Ash
-        };
+        // Combustion products (kg/kg fuel)
+        const CO2 = C * (44 / 12);
+        const H2O = H * (9 / 1);
+        const SO2 = S * (64 / 32);
+        const ExcessO2 = ActualAir * 0.233 - O2_required;
+        const N2_from_air = ActualAir * 0.767; // Assuming air has 76.7% nitrogen by mass
+        const N2 = N + N2_from_air;
+
+        // Total flue gas mass (kg/kg fuel)
+        const TotalFlueGas = CO2 + H2O + SO2 + ExcessO2 + N2 + Ash + Moisture;
+
+        // Dry flue gas mass (kg/kg fuel)
+        const DryFlueGas = TotalFlueGas - H2O - Moisture;
+
+        // Molar amounts (kmol/kg fuel)
+        const n_CO2 = CO2 / 44;
+        const n_H2O = H2O / 18;
+        const n_SO2 = SO2 / 64;
+        const n_O2 = ExcessO2 / 32;
+        const n_N2 = N2 / 28;
+
+        const TotalMolesWet = n_CO2 + n_H2O + n_SO2 + n_O2 + n_N2;
+        const TotalMolesDry = TotalMolesWet - n_H2O;
+
+        // Volume (Nm³/kg fuel)
+        const MolarVolume = 22.414; // Nm³/kmol at NTP
+        const WetFlueGasVolume = TotalMolesWet * MolarVolume;
+        const DryFlueGasVolume = TotalMolesDry * MolarVolume;
+
+        // Volume percentages (wet)
+        const vol_CO2_wet = (n_CO2 / TotalMolesWet) * 100;
+        const vol_H2O_wet = (n_H2O / TotalMolesWet) * 100;
+        const vol_SO2_wet = (n_SO2 / TotalMolesWet) * 100;
+        const vol_O2_wet = (n_O2 / TotalMolesWet) * 100;
+        const vol_N2_wet = (n_N2 / TotalMolesWet) * 100;
+
+        // Volume percentages (dry)
+        const vol_CO2_dry = (n_CO2 / TotalMolesDry) * 100;
+        const vol_SO2_dry = (n_SO2 / TotalMolesDry) * 100;
+        const vol_O2_dry = (n_O2 / TotalMolesDry) * 100;
+        const vol_N2_dry = (n_N2 / TotalMolesDry) * 100;
 
         results.elementalAnalysis.push({
             fuelType: capitalizeFirstLetter(fuel.type),
@@ -155,7 +184,39 @@ function calculateCombustion(fuels, gasPressure, fuelTemp, airInletTemp, excessA
 
         results.combustionProducts.push({
             fuelType: capitalizeFirstLetter(fuel.type),
-            combustionProducts
+            combustionProducts: {
+                CO2: CO2.toFixed(3),
+                H2O: H2O.toFixed(3),
+                SO2: SO2.toFixed(3),
+                O2: ExcessO2.toFixed(3),
+                N2: N2.toFixed(3),
+                Ash: Ash.toFixed(3),
+                TotalFlueGas: TotalFlueGas.toFixed(3),
+                DryFlueGas: DryFlueGas.toFixed(3)
+            },
+            flueGasVolumes: {
+                WetVolume: WetFlueGasVolume.toFixed(3),
+                DryVolume: DryFlueGasVolume.toFixed(3)
+            },
+            volumePercentages: {
+                wet: {
+                    CO2: vol_CO2_wet.toFixed(2),
+                    H2O: vol_H2O_wet.toFixed(2),
+                    SO2: vol_SO2_wet.toFixed(2),
+                    O2: vol_O2_wet.toFixed(2),
+                    N2: vol_N2_wet.toFixed(2)
+                },
+                dry: {
+                    CO2: vol_CO2_dry.toFixed(2),
+                    SO2: vol_SO2_dry.toFixed(2),
+                    O2: vol_O2_dry.toFixed(2),
+                    N2: vol_N2_dry.toFixed(2)
+                }
+            },
+            airFuelRatio: {
+                StoichiometricAir: StoichAir.toFixed(3),
+                ActualAir: ActualAir.toFixed(3)
+            }
         });
 
         results.calorificValues.push({
@@ -175,20 +236,34 @@ function combineResults(fuels, results) {
     const combined = {
         elementalMassPercentages: {},
         combustionProducts: {},
-        calorificValues: {}
+        calorificValues: {},
+        flueGasVolumes: {},
+        volumePercentages: {},
+        airFuelRatio: {}
     };
 
     const totalFlowRate = fuels.reduce((sum, fuel) => sum + fuel.flowRate, 0);
 
     const elements = ['carbon', 'hydrogen', 'sulphur', 'nitrogen', 'oxygen', 'water', 'argon', 'ash'];
-    const products = ['CO2', 'H2O', 'SO2', 'N2', 'O2', 'Ash'];
+    const products = ['CO2', 'H2O', 'SO2', 'O2', 'N2', 'Ash'];
+    const volumes = ['WetVolume', 'DryVolume'];
+    const airRatios = ['StoichiometricAir', 'ActualAir'];
 
+    // Initialize combined percentages
     elements.forEach(element => {
         combined.elementalMassPercentages[element] = 0;
     });
 
     products.forEach(product => {
         combined.combustionProducts[product] = 0;
+    });
+
+    volumes.forEach(volume => {
+        combined.flueGasVolumes[volume] = 0;
+    });
+
+    airRatios.forEach(ratio => {
+        combined.airFuelRatio[ratio] = 0;
     });
 
     let totalGCV = 0;
@@ -206,13 +281,22 @@ function combineResults(fuels, results) {
         const NCV = parseFloat(results.calorificValues[index].NCV);
         totalGCV += GCV * weightFactor;
         totalNCV += NCV * weightFactor;
+
+        // Air-to-fuel ratios
+        airRatios.forEach(ratio => {
+            combined.airFuelRatio[ratio] += parseFloat(results.combustionProducts[index].airFuelRatio[ratio]) * weightFactor;
+        });
     });
 
     results.combustionProducts.forEach((productData, index) => {
         const fuel = fuels[index];
         const weightFactor = fuel.flowRate / totalFlowRate;
         products.forEach(product => {
-            combined.combustionProducts[product] += productData.combustionProducts[product] * weightFactor;
+            combined.combustionProducts[product] += parseFloat(productData.combustionProducts[product]) * weightFactor;
+        });
+
+        volumes.forEach(volume => {
+            combined.flueGasVolumes[volume] += parseFloat(productData.flueGasVolumes[volume]) * weightFactor;
         });
     });
 
@@ -253,11 +337,24 @@ function displayResults(container, results) {
     combustionSection.className = 'result-section';
     combustionSection.innerHTML = '<h3>Combustion Products</h3>';
     results.combustionProducts.forEach(item => {
-        const table = createTableFromObject(item.combustionProducts, 'Product', 'Amount (kg/kg fuel)', true);
         const heading = document.createElement('h4');
         heading.textContent = `${item.fuelType} Fuel Combustion Products`;
         combustionSection.appendChild(heading);
-        combustionSection.appendChild(table);
+
+        const productsTable = createTableFromObject(item.combustionProducts, 'Product', 'Amount (kg/kg fuel)', true);
+        combustionSection.appendChild(productsTable);
+
+        const volumesTable = createTableFromObject(item.flueGasVolumes, 'Parameter', 'Value (Nm³/kg fuel)', false);
+        combustionSection.appendChild(volumesTable);
+
+        const airFuelRatioTable = createTableFromObject(item.airFuelRatio, 'Parameter', 'Value (kg air/kg fuel)', false);
+        combustionSection.appendChild(airFuelRatioTable);
+
+        const volumePercentagesWet = createTableFromObject(item.volumePercentages.wet, 'Component', 'Wet Volume (%)', true);
+        combustionSection.appendChild(volumePercentagesWet);
+
+        const volumePercentagesDry = createTableFromObject(item.volumePercentages.dry, 'Component', 'Dry Volume (%)', true);
+        combustionSection.appendChild(volumePercentagesDry);
     });
     container.appendChild(combustionSection);
 
@@ -285,8 +382,14 @@ function displayResults(container, results) {
     const combinedCombustionHeading = document.createElement('h4');
     combinedCombustionHeading.textContent = 'Combined Combustion Products';
     combinedSection.appendChild(combinedCombustionHeading);
-    const combinedCombustionTable = createTableFromObject(results.combined.combustionProducts, 'Product', 'Amount', true);
+    const combinedCombustionTable = createTableFromObject(results.combined.combustionProducts, 'Product', 'Amount (kg/kg fuel)', true);
     combinedSection.appendChild(combinedCombustionTable);
+
+    const combinedVolumesTable = createTableFromObject(results.combined.flueGasVolumes, 'Parameter', 'Value (Nm³/kg fuel)', false);
+    combinedSection.appendChild(combinedVolumesTable);
+
+    const combinedAirFuelRatioTable = createTableFromObject(results.combined.airFuelRatio, 'Parameter', 'Value (kg air/kg fuel)', false);
+    combinedSection.appendChild(combinedAirFuelRatioTable);
 
     container.appendChild(combinedSection);
 }
@@ -370,8 +473,8 @@ function formatChemicalSymbol(symbol) {
         CO2: 'CO₂',
         H2O: 'H₂O',
         SO2: 'SO₂',
-        N2: 'N₂',
         O2: 'O₂',
+        N2: 'N₂',
         Ash: 'Ash'
     };
     return symbolMap[symbol] || symbol;
