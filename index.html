@@ -8,140 +8,156 @@
 <body>
     <h1>Fuel Analysis and Combustion Simulation</h1>
     <div id="app">
-        <h2>Fuel Input</h2>
         <form id="fuel-form">
-            <!-- Gas Fuel -->
-            <div class="fuel-section">
-                <h3>Gas Fuel</h3>
-                <label>
-                    <input type="checkbox" id="gas-used" checked>
-                    Use Gas Fuel
-                </label>
-                <div id="gas-inputs">
-                    <label for="gas-flow">Flow Rate (m³/h):</label>
-                    <input type="number" id="gas-flow" required><br><br>
-                    
-                    <label for="gas-carbon">Carbon (%) :</label>
-                    <input type="number" id="gas-carbon" required><br><br>
-                    
-                    <label for="gas-hydrogen">Hydrogen (%) :</label>
-                    <input type="number" id="gas-hydrogen" required><br><br>
-                    
-                    <label for="gas-sulphur">Sulphur (%) :</label>
-                    <input type="number" id="gas-sulphur" required><br><br>
-                    
-                    <label for="gas-nitrogen">Nitrogen (%) :</label>
-                    <input type="number" id="gas-nitrogen" required><br><br>
-                    
-                    <label for="gas-oxygen">Oxygen (%) :</label>
-                    <input type="number" id="gas-oxygen" required><br><br>
-                    
-                    <label for="gas-water">Water (%) :</label>
-                    <input type="number" id="gas-water" required><br><br>
-                    
-                    <label for="gas-argon">Argon (%) :</label>
-                    <input type="number" id="gas-argon" required><br><br>
-                    
-                    <label for="gas-ash">Ash (%) :</label>
-                    <input type="number" id="gas-ash" required><br><br>
+            <!-- Fuel Input and Operational Parameters -->
+            <div class="container">
+                <!-- Fuel Input -->
+                <div class="fuel-input">
+                    <h2>Fuel Input</h2>
+                    <!-- Gas Fuel -->
+                    <div class="fuel-section">
+                        <h3>Gas Fuel</h3>
+                        <label>
+                            <input type="checkbox" id="gas-used" checked>
+                            Use Gas Fuel
+                        </label>
+                        <div id="gas-inputs">
+                            <div class="input-grid">
+                                <label for="gas-flow">Flow Rate (m³/h):</label>
+                                <input type="number" id="gas-flow" step="any" required>
+                                
+                                <label for="gas-carbon">Carbon (%) :</label>
+                                <input type="number" id="gas-carbon" step="any" required>
+                                
+                                <label for="gas-hydrogen">Hydrogen (%) :</label>
+                                <input type="number" id="gas-hydrogen" step="any" required>
+                                
+                                <label for="gas-sulphur">Sulphur (%) :</label>
+                                <input type="number" id="gas-sulphur" step="any" required>
+                                
+                                <label for="gas-nitrogen">Nitrogen (%) :</label>
+                                <input type="number" id="gas-nitrogen" step="any" required>
+                                
+                                <label for="gas-oxygen">Oxygen (%) :</label>
+                                <input type="number" id="gas-oxygen" step="any" required>
+                                
+                                <label for="gas-water">Water (%) :</label>
+                                <input type="number" id="gas-water" step="any" required>
+                                
+                                <label for="gas-argon">Argon (%) :</label>
+                                <input type="number" id="gas-argon" step="any" required>
+                                
+                                <label for="gas-ash">Ash (%) :</label>
+                                <input type="number" id="gas-ash" step="any" required>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Solid Fuel -->
+                    <div class="fuel-section">
+                        <h3>Solid Fuel</h3>
+                        <label>
+                            <input type="checkbox" id="solid-used" checked>
+                            Use Solid Fuel
+                        </label>
+                        <div id="solid-inputs">
+                            <div class="input-grid">
+                                <label for="solid-flow">Flow Rate (kg/h):</label>
+                                <input type="number" id="solid-flow" step="any" required>
+                                
+                                <label for="solid-carbon">Carbon (%) :</label>
+                                <input type="number" id="solid-carbon" step="any" required>
+                                
+                                <label for="solid-hydrogen">Hydrogen (%) :</label>
+                                <input type="number" id="solid-hydrogen" step="any" required>
+                                
+                                <label for="solid-sulphur">Sulphur (%) :</label>
+                                <input type="number" id="solid-sulphur" step="any" required>
+                                
+                                <label for="solid-nitrogen">Nitrogen (%) :</label>
+                                <input type="number" id="solid-nitrogen" step="any" required>
+                                
+                                <label for="solid-oxygen">Oxygen (%) :</label>
+                                <input type="number" id="solid-oxygen" step="any" required>
+                                
+                                <label for="solid-water">Water (%) :</label>
+                                <input type="number" id="solid-water" step="any" required>
+                                
+                                <label for="solid-argon">Argon (%) :</label>
+                                <input type="number" id="solid-argon" step="any" required>
+                                
+                                <label for="solid-ash">Ash (%) :</label>
+                                <input type="number" id="solid-ash" step="any" required>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Liquid Fuel -->
+                    <div class="fuel-section">
+                        <h3>Liquid Fuel</h3>
+                        <label>
+                            <input type="checkbox" id="liquid-used" checked>
+                            Use Liquid Fuel
+                        </label>
+                        <div id="liquid-inputs">
+                            <div class="input-grid">
+                                <label for="liquid-flow">Flow Rate (kg/h):</label>
+                                <input type="number" id="liquid-flow" step="any" required>
+                                
+                                <label for="liquid-carbon">Carbon (%) :</label>
+                                <input type="number" id="liquid-carbon" step="any" required>
+                                
+                                <label for="liquid-hydrogen">Hydrogen (%) :</label>
+                                <input type="number" id="liquid-hydrogen" step="any" required>
+                                
+                                <label for="liquid-sulphur">Sulphur (%) :</label>
+                                <input type="number" id="liquid-sulphur" step="any" required>
+                                
+                                <label for="liquid-nitrogen">Nitrogen (%) :</label>
+                                <input type="number" id="liquid-nitrogen" step="any" required>
+                                
+                                <label for="liquid-oxygen">Oxygen (%) :</label>
+                                <input type="number" id="liquid-oxygen" step="any" required>
+                                
+                                <label for="liquid-water">Water (%) :</label>
+                                <input type="number" id="liquid-water" step="any" required>
+                                
+                                <label for="liquid-argon">Argon (%) :</label>
+                                <input type="number" id="liquid-argon" step="any" required>
+                                
+                                <label for="liquid-ash">Ash (%) :</label>
+                                <input type="number" id="liquid-ash" step="any" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+                <!-- Operational Parameters -->
+                <div class="operational-parameters">
+                    <h2>Operational Parameters</h2>
+                    <div class="input-grid">
+                        <label for="gas-pressure">Gas Pressure (Pa):</label>
+                        <input type="number" id="gas-pressure" step="any" required>
+                        
+                        <label for="fuel-temp">Fuel Temperature (°C):</label>
+                        <input type="number" id="fuel-temp" step="any" required>
+                        
+                        <label for="air-inlet-temp">Air Inlet Temperature (°C):</label>
+                        <input type="number" id="air-inlet-temp" step="any" required>
+                        
+                        <label for="excess-air">Excess Air (%):</label>
+                        <input type="number" id="excess-air" step="any" required>
+                    </div>
+    
+                    <button type="submit">Calculate</button>
                 </div>
             </div>
-
-            <!-- Solid Fuel -->
-            <div class="fuel-section">
-                <h3>Solid Fuel</h3>
-                <label>
-                    <input type="checkbox" id="solid-used" checked>
-                    Use Solid Fuel
-                </label>
-                <div id="solid-inputs">
-                    <label for="solid-flow">Flow Rate (kg/h):</label>
-                    <input type="number" id="solid-flow" required><br><br>
-                    
-                    <label for="solid-carbon">Carbon (%) :</label>
-                    <input type="number" id="solid-carbon" required><br><br>
-                    
-                    <label for="solid-hydrogen">Hydrogen (%) :</label>
-                    <input type="number" id="solid-hydrogen" required><br><br>
-                    
-                    <label for="solid-sulphur">Sulphur (%) :</label>
-                    <input type="number" id="solid-sulphur" required><br><br>
-                    
-                    <label for="solid-nitrogen">Nitrogen (%) :</label>
-                    <input type="number" id="solid-nitrogen" required><br><br>
-                    
-                    <label for="solid-oxygen">Oxygen (%) :</label>
-                    <input type="number" id="solid-oxygen" required><br><br>
-                    
-                    <label for="solid-water">Water (%) :</label>
-                    <input type="number" id="solid-water" required><br><br>
-                    
-                    <label for="solid-argon">Argon (%) :</label>
-                    <input type="number" id="solid-argon" required><br><br>
-                    
-                    <label for="solid-ash">Ash (%) :</label>
-                    <input type="number" id="solid-ash" required><br><br>
-                </div>
-            </div>
-
-            <!-- Liquid Fuel -->
-            <div class="fuel-section">
-                <h3>Liquid Fuel</h3>
-                <label>
-                    <input type="checkbox" id="liquid-used" checked>
-                    Use Liquid Fuel
-                </label>
-                <div id="liquid-inputs">
-                    <label for="liquid-flow">Flow Rate (kg/h):</label>
-                    <input type="number" id="liquid-flow" required><br><br>
-                    
-                    <label for="liquid-carbon">Carbon (%) :</label>
-                    <input type="number" id="liquid-carbon" required><br><br>
-                    
-                    <label for="liquid-hydrogen">Hydrogen (%) :</label>
-                    <input type="number" id="liquid-hydrogen" required><br><br>
-                    
-                    <label for="liquid-sulphur">Sulphur (%) :</label>
-                    <input type="number" id="liquid-sulphur" required><br><br>
-                    
-                    <label for="liquid-nitrogen">Nitrogen (%) :</label>
-                    <input type="number" id="liquid-nitrogen" required><br><br>
-                    
-                    <label for="liquid-oxygen">Oxygen (%) :</label>
-                    <input type="number" id="liquid-oxygen" required><br><br>
-                    
-                    <label for="liquid-water">Water (%) :</label>
-                    <input type="number" id="liquid-water" required><br><br>
-                    
-                    <label for="liquid-argon">Argon (%) :</label>
-                    <input type="number" id="liquid-argon" required><br><br>
-                    
-                    <label for="liquid-ash">Ash (%) :</label>
-                    <input type="number" id="liquid-ash" required><br><br>
-                </div>
-            </div>
-
-            <!-- Operational Parameters -->
-            <h2>Operational Parameters</h2>
-            <label for="gas-pressure">Gas Pressure (Pa):</label>
-            <input type="number" id="gas-pressure" required><br><br>
-            
-            <label for="fuel-temp">Fuel Temperature (°C):</label>
-            <input type="number" id="fuel-temp" required><br><br>
-            
-            <label for="air-inlet-temp">Air Inlet Temperature (°C):</label>
-            <input type="number" id="air-inlet-temp" required><br><br>
-            
-            <label for="excess-air">Excess Air (%):</label>
-            <input type="number" id="excess-air" required><br><br>
-
-            <button type="submit">Calculate</button>
         </form>
-
+    
         <h2>Results</h2>
         <div id="results"></div>
     </div>
-
+    
     <script src="script.js"></script>
 </body>
 </html>
