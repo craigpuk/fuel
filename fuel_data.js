@@ -1,4 +1,4 @@
-[
+const fuelData = [
   {
     "Name": "Methane",
     "Type": "Gas",
