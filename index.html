@@ -43,6 +43,9 @@
         input[type="number"] {
             width: 80px;
         }
+        input[type="text"] {
+            width: 150px;
+        }
     </style>
 </head>
 <body>
@@ -76,12 +79,12 @@
         </tr>
         <tr>
             <td>Fuel Flow Rate</td>
-            <td><input type="number" id="fuelFlowRate" value="1.0" step="0.01"></td>
+            <td><input type="number" id="fuelFlowRate" value="1600" step="0.01"></td>
             <td>m³/h</td>
         </tr>
         <tr>
             <td>Fuel Density</td>
-            <td><input type="number" id="fuelDensity" value="850" step="0.1"></td>
+            <td><input type="number" id="fuelDensity" value="0.7" step="0.001"></td>
             <td>kg/m³</td>
         </tr>
     </table>
@@ -162,6 +165,11 @@
             <td>kg air/kg fuel</td>
         </tr>
         <tr>
+            <td>Total Air Required</td>
+            <td id="totalAirRequired"></td>
+            <td>m³/h</td>
+        </tr>
+        <tr>
             <td>Flue Gas Density</td>
             <td id="flueGasDensity"></td>
             <td>kg/Nm³</td>
@@ -205,15 +213,21 @@
             const total = carbon + hydrogen + sulphur + nitrogen + oxygen + water + ash;
             document.getElementById('elementTotal').textContent = total.toFixed(3);
 
+            // Check that total mass percentage is 100%
+            if (Math.abs(total - 100) > 0.01) {
+                alert("Elemental percentages must sum up to 100%");
+                return;
+            }
+
             // Convert fuel flow rate to kg/h
             const fuelMassFlowRate = fuelFlowRate * fuelDensity; // kg/h
 
             // Dulong's formula for GCV
-            const GCV = (338.2 * carbon + 1442.8 * hydrogen - 62.4 * oxygen + 40.0 * sulphur) / 100; // MJ/kg
+            const GCV = (337 * carbon + 1442 * hydrogen + 93 * sulphur) / 1000; // MJ/kg
             const GCV_Btu = GCV * 429.923; // Btu/lb
 
             // NCV calculation
-            const NCV = GCV - (2.442 * hydrogen); // MJ/kg
+            const NCV = GCV - 2.442 * hydrogen; // MJ/kg
             const NCV_Btu = NCV * 429.923; // Btu/lb
 
             // Display Dulong's values
@@ -223,13 +237,21 @@
             document.getElementById('dulongNCVBtu').textContent = NCV_Btu.toFixed(0);
 
             // Stoichiometric oxygen calculation (kg O2 per kg fuel)
-            const stoicO2 = (carbon / 100) * (32 / 12) + (hydrogen / 100) * (8 / 1) + (sulphur / 100) * (32 / 32) - (oxygen / 100) * (1);
+            const stoicO2 = ((carbon / 100) * (32 / 12) * 12) + ((hydrogen / 100) * (8 / 1) * 1) + ((sulphur / 100) * (32 / 32) * 32) - ((oxygen / 100) * 1);
             document.getElementById('stoicO2').textContent = stoicO2.toFixed(3);
 
             // Stoichiometric air (assuming air is 23.3% O2 by mass)
             const O2_in_air = 0.233;
             const stoicAir = stoicO2 / O2_in_air;
             document.getElementById('stoicAir').textContent = stoicAir.toFixed(3);
+
+            // Total air required at stoichiometric conditions (kg/h)
+            const totalAirRequiredStoic = fuelMassFlowRate * stoicAir; // kg/h
+
+            // Convert air required to m³/h (assuming air density at NTP is 1.293 kg/Nm³)
+            const airDensity = 1.293; // kg/Nm³
+            const totalAirRequiredStoicNm3h = totalAirRequiredStoic / airDensity; // Nm³/h
+            document.getElementById('totalAirRequired').textContent = totalAirRequiredStoicNm3h.toFixed(2);
 
             // Flue gas density calculation at stoichiometric conditions
             const MW_CO2 = 44.01;
@@ -239,22 +261,26 @@
             const MW_SO2 = 64.066;
             const MW_Ar = 39.948;
 
-            const moles_CO2 = (carbon / 100) / 12;
-            const moles_H2O = (hydrogen / 100) / 2;
-            const moles_SO2 = (sulphur / 100) / 32;
-            const moles_O2 = 0; // At stoichiometric combustion, excess O2 is zero
-            const moles_N2 = (stoicAir * (1 - O2_in_air)) / MW_N2;
-            const moles_Ar = (stoicAir * 0.0128) / MW_Ar; // Air contains about 1.28% Argon by mass
+            // Moles of components per kg fuel
+            const moles_C = (carbon / 100) / 12.011; // kmol/kg fuel
+            const moles_H = (hydrogen / 100) / 1.008; // kmol/kg fuel
+            const moles_S = (sulphur / 100) / 32.065; // kmol/kg fuel
 
-            const totalMoles = moles_CO2 + moles_H2O + moles_SO2 + moles_N2 + moles_O2 + moles_Ar;
+            const moles_CO2 = moles_C; // Assuming complete combustion
+            const moles_H2O = moles_H / 2; // H2 forms H2O
+            const moles_SO2 = moles_S; // Assuming complete combustion
+
+            const moles_O2_consumed = moles_C * (32 / 12.011) + moles_H * (16 / 1.008) + moles_S * (32 / 32.065);
+            const moles_N2 = (stoicAir * (1 - O2_in_air)) / MW_N2; // Air N2
+
+            const totalMoles = moles_CO2 + moles_H2O + moles_SO2 + moles_N2;
 
             const mass_CO2 = moles_CO2 * MW_CO2;
             const mass_H2O = moles_H2O * MW_H2O;
             const mass_SO2 = moles_SO2 * MW_SO2;
             const mass_N2 = moles_N2 * MW_N2;
-            const mass_Ar = moles_Ar * MW_Ar;
 
-            const totalFlueGasMass = mass_CO2 + mass_H2O + mass_SO2 + mass_N2 + mass_Ar;
+            const totalFlueGasMass = mass_CO2 + mass_H2O + mass_SO2 + mass_N2;
 
             const flueGasDensityStoic = totalFlueGasMass / (totalMoles * 22.414); // kg/Nm³
             document.getElementById('flueGasDensity').textContent = flueGasDensityStoic.toFixed(3);
@@ -265,30 +291,24 @@
             flueGasTable.innerHTML = ''; // Clear previous results
 
             excessAirValues.forEach(function (excessAir) {
-                const actualAir = stoicAir * (1 + excessAir / 100);
-
+                const actualAir = stoicAir * (1 + excessAir / 100); // kg air/kg fuel
                 const excessO2_mass = actualAir * O2_in_air - stoicO2;
                 const excessO2_moles = excessO2_mass / MW_O2;
 
-                const moles_O2_excess = excessO2_moles;
                 const moles_N2_excess = (actualAir * (1 - O2_in_air)) / MW_N2;
-                const moles_Ar_excess = (actualAir * 0.0128) / MW_Ar;
-
-                const totalMolesExcess = moles_CO2 + moles_H2O + moles_SO2 + moles_N2_excess + moles_O2_excess + moles_Ar_excess;
+                const totalMolesExcess = moles_CO2 + moles_H2O + moles_SO2 + moles_N2_excess + excessO2_moles;
 
                 const vol_CO2 = (moles_CO2 / totalMolesExcess) * 100;
-                const vol_O2 = (moles_O2_excess / totalMolesExcess) * 100;
+                const vol_O2 = (excessO2_moles / totalMolesExcess) * 100;
                 const vol_N2 = (moles_N2_excess / totalMolesExcess) * 100;
 
                 // Flue gas density at given excess air
-                const mass_O2 = moles_O2_excess * MW_O2;
+                const mass_O2 = excessO2_moles * MW_O2;
                 const mass_N2 = moles_N2_excess * MW_N2;
-                const mass_Ar = moles_Ar_excess * MW_Ar;
+                const mass_Ar = 0; // Neglected for simplicity
 
-                const totalFlueGasMassExcess = mass_CO2 + mass_H2O + mass_SO2 + mass_N2 + mass_O2 + mass_Ar;
-                const totalMolesExcessAll = moles_CO2 + moles_H2O + moles_SO2 + moles_N2_excess + moles_O2_excess + moles_Ar_excess;
-
-                const flueGasDensityExcess = totalFlueGasMassExcess / (totalMolesExcessAll * 22.414);
+                const totalFlueGasMassExcess = mass_CO2 + mass_H2O + mass_SO2 + mass_N2 + mass_O2;
+                const flueGasDensityExcess = totalFlueGasMassExcess / (totalMolesExcess * 22.414);
 
                 // Create table row
                 const row = document.createElement('tr');
