@@ -1,1 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flue Gas Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: right;
+        }
+        th {
+            background-color: #eee;
+        }
+        .input-cell {
+            background-color: #fff7e6;
+        }
+        .output-cell {
+            background-color: #e6ffe6;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #555;
+            text-align: center;
+        }
+        .center {
+            text-align: center;
+        }
+        input[type="number"] {
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flue Gas Analysis</h1>
+    <h2>Fuel Information</h2>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Fuel Name / Reference</td>
+            <td><input type="text" id="fuelName" value="Gas Oil"></td>
+        </tr>
+        <tr>
+            <td>Date</td>
+            <td><input type="date" id="date" value="2016-12-05"></td>
+        </tr>
+        <tr>
+            <td>Issue</td>
+            <td><input type="text" id="issue" value="ISSUE 1.1 [05-Dec-2016]"></td>
+        </tr>
+    </table>
 
+    <h2>Fuel Properties</h2>
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+            <th>Unit</th>
+        </tr>
+        <tr>
+            <td>Fuel Flow Rate</td>
+            <td><input type="number" id="fuelFlowRate" value="1.0" step="0.01"></td>
+            <td>m³/h</td>
+        </tr>
+        <tr>
+            <td>Fuel Density</td>
+            <td><input type="number" id="fuelDensity" value="850" step="0.1"></td>
+            <td>kg/m³</td>
+        </tr>
+    </table>
+
+    <h2>Elemental Mass % Analysis</h2>
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Mass %</th>
+        </tr>
+        <tr>
+            <td>Carbon</td>
+            <td><input type="number" id="carbon" value="86.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Hydrogen</td>
+            <td><input type="number" id="hydrogen" value="14.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Sulphur</td>
+            <td><input type="number" id="sulphur" value="0.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Nitrogen</td>
+            <td><input type="number" id="nitrogen" value="0.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Oxygen</td>
+            <td><input type="number" id="oxygen" value="0.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Water</td>
+            <td><input type="number" id="water" value="0.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Ash</td>
+            <td><input type="number" id="ash" value="0.0" step="0.001"></td>
+        </tr>
+        <tr>
+            <td>Total</td>
+            <td id="elementTotal">100.000</td>
+        </tr>
+    </table>
+
+    <h2>Calculated Calorific Values</h2>
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>GCV (MJ/kg)</th>
+            <th>GCV (Btu/lb)</th>
+            <th>NCV (MJ/kg)</th>
+            <th>NCV (Btu/lb)</th>
+        </tr>
+        <tr>
+            <td>Dulong's Formula</td>
+            <td id="dulongGCV"></td>
+            <td id="dulongGCVBtu"></td>
+            <td id="dulongNCV"></td>
+            <td id="dulongNCVBtu"></td>
+        </tr>
+    </table>
+
+    <h2>Combustion Calculations</h2>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+            <th>Unit</th>
+        </tr>
+        <tr>
+            <td>Stoichiometric Oxygen</td>
+            <td id="stoicO2"></td>
+            <td>kg O₂/kg fuel</td>
+        </tr>
+        <tr>
+            <td>Stoichiometric Air</td>
+            <td id="stoicAir"></td>
+            <td>kg air/kg fuel</td>
+        </tr>
+        <tr>
+            <td>Flue Gas Density</td>
+            <td id="flueGasDensity"></td>
+            <td>kg/Nm³</td>
+        </tr>
+    </table>
+
+    <h2>Flue Gas Analysis</h2>
+    <table>
+        <tr>
+            <th>% Excess Air</th>
+            <th>% CO<sub>2</sub></th>
+            <th>% O<sub>2</sub></th>
+            <th>% N<sub>2</sub></th>
+            <th>Flue Gas Density (kg/Nm³)</th>
+        </tr>
+        <!-- Rows will be inserted here by JavaScript -->
+        <tbody id="flueGasTable"></tbody>
+    </table>
+
+    <div class="center">
+        <button onclick="calculate()">Calculate</button>
+    </div>
+
+    <p class="note">Note: Adjust the fuel properties and elemental composition, then click "Calculate" to update the results.</p>
+
+    <script>
+        function calculate() {
+            // Get input values
+            const carbon = parseFloat(document.getElementById('carbon').value) || 0;
+            const hydrogen = parseFloat(document.getElementById('hydrogen').value) || 0;
+            const sulphur = parseFloat(document.getElementById('sulphur').value) || 0;
+            const nitrogen = parseFloat(document.getElementById('nitrogen').value) || 0;
+            const oxygen = parseFloat(document.getElementById('oxygen').value) || 0;
+            const water = parseFloat(document.getElementById('water').value) || 0;
+            const ash = parseFloat(document.getElementById('ash').value) || 0;
+
+            const fuelFlowRate = parseFloat(document.getElementById('fuelFlowRate').value) || 0; // m³/h
+            const fuelDensity = parseFloat(document.getElementById('fuelDensity').value) || 0; // kg/m³
+
+            // Total mass percentage
+            const total = carbon + hydrogen + sulphur + nitrogen + oxygen + water + ash;
+            document.getElementById('elementTotal').textContent = total.toFixed(3);
+
+            // Convert fuel flow rate to kg/h
+            const fuelMassFlowRate = fuelFlowRate * fuelDensity; // kg/h
+
+            // Dulong's formula for GCV
+            const GCV = (338.2 * carbon + 1442.8 * hydrogen - 62.4 * oxygen + 40.0 * sulphur) / 100; // MJ/kg
+            const GCV_Btu = GCV * 429.923; // Btu/lb
+
+            // NCV calculation
+            const NCV = GCV - (2.442 * hydrogen); // MJ/kg
+            const NCV_Btu = NCV * 429.923; // Btu/lb
+
+            // Display Dulong's values
+            document.getElementById('dulongGCV').textContent = GCV.toFixed(3);
+            document.getElementById('dulongGCVBtu').textContent = GCV_Btu.toFixed(0);
+            document.getElementById('dulongNCV').textContent = NCV.toFixed(3);
+            document.getElementById('dulongNCVBtu').textContent = NCV_Btu.toFixed(0);
+
+            // Stoichiometric oxygen calculation (kg O2 per kg fuel)
+            const stoicO2 = (carbon / 100) * (32 / 12) + (hydrogen / 100) * (8 / 1) + (sulphur / 100) * (32 / 32) - (oxygen / 100) * (1);
+            document.getElementById('stoicO2').textContent = stoicO2.toFixed(3);
+
+            // Stoichiometric air (assuming air is 23.3% O2 by mass)
+            const O2_in_air = 0.233;
+            const stoicAir = stoicO2 / O2_in_air;
+            document.getElementById('stoicAir').textContent = stoicAir.toFixed(3);
+
+            // Flue gas density calculation at stoichiometric conditions
+            const MW_CO2 = 44.01;
+            const MW_H2O = 18.015;
+            const MW_N2 = 28.0134;
+            const MW_O2 = 32.00;
+            const MW_SO2 = 64.066;
+            const MW_Ar = 39.948;
+
+            const moles_CO2 = (carbon / 100) / 12;
+            const moles_H2O = (hydrogen / 100) / 2;
+            const moles_SO2 = (sulphur / 100) / 32;
+            const moles_O2 = 0; // At stoichiometric combustion, excess O2 is zero
+            const moles_N2 = (stoicAir * (1 - O2_in_air)) / MW_N2;
+            const moles_Ar = (stoicAir * 0.0128) / MW_Ar; // Air contains about 1.28% Argon by mass
+
+            const totalMoles = moles_CO2 + moles_H2O + moles_SO2 + moles_N2 + moles_O2 + moles_Ar;
+
+            const mass_CO2 = moles_CO2 * MW_CO2;
+            const mass_H2O = moles_H2O * MW_H2O;
+            const mass_SO2 = moles_SO2 * MW_SO2;
+            const mass_N2 = moles_N2 * MW_N2;
+            const mass_Ar = moles_Ar * MW_Ar;
+
+            const totalFlueGasMass = mass_CO2 + mass_H2O + mass_SO2 + mass_N2 + mass_Ar;
+
+            const flueGasDensityStoic = totalFlueGasMass / (totalMoles * 22.414); // kg/Nm³
+            document.getElementById('flueGasDensity').textContent = flueGasDensityStoic.toFixed(3);
+
+            // Flue Gas Analysis for different excess air percentages
+            const excessAirValues = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+            const flueGasTable = document.getElementById('flueGasTable');
+            flueGasTable.innerHTML = ''; // Clear previous results
+
+            excessAirValues.forEach(function (excessAir) {
+                const actualAir = stoicAir * (1 + excessAir / 100);
+
+                const excessO2_mass = actualAir * O2_in_air - stoicO2;
+                const excessO2_moles = excessO2_mass / MW_O2;
+
+                const moles_O2_excess = excessO2_moles;
+                const moles_N2_excess = (actualAir * (1 - O2_in_air)) / MW_N2;
+                const moles_Ar_excess = (actualAir * 0.0128) / MW_Ar;
+
+                const totalMolesExcess = moles_CO2 + moles_H2O + moles_SO2 + moles_N2_excess + moles_O2_excess + moles_Ar_excess;
+
+                const vol_CO2 = (moles_CO2 / totalMolesExcess) * 100;
+                const vol_O2 = (moles_O2_excess / totalMolesExcess) * 100;
+                const vol_N2 = (moles_N2_excess / totalMolesExcess) * 100;
+
+                // Flue gas density at given excess air
+                const mass_O2 = moles_O2_excess * MW_O2;
+                const mass_N2 = moles_N2_excess * MW_N2;
+                const mass_Ar = moles_Ar_excess * MW_Ar;
+
+                const totalFlueGasMassExcess = mass_CO2 + mass_H2O + mass_SO2 + mass_N2 + mass_O2 + mass_Ar;
+                const totalMolesExcessAll = moles_CO2 + moles_H2O + moles_SO2 + moles_N2_excess + moles_O2_excess + moles_Ar_excess;
+
+                const flueGasDensityExcess = totalFlueGasMassExcess / (totalMolesExcessAll * 22.414);
+
+                // Create table row
+                const row = document.createElement('tr');
+
+                const cellExcessAir = document.createElement('td');
+                cellExcessAir.textContent = excessAir.toFixed(2);
+                row.appendChild(cellExcessAir);
+
+                const cellCO2 = document.createElement('td');
+                cellCO2.textContent = vol_CO2.toFixed(3);
+                row.appendChild(cellCO2);
+
+                const cellO2 = document.createElement('td');
+                cellO2.textContent = vol_O2.toFixed(3);
+                row.appendChild(cellO2);
+
+                const cellN2 = document.createElement('td');
+                cellN2.textContent = vol_N2.toFixed(3);
+                row.appendChild(cellN2);
+
+                const cellFlueGasDensity = document.createElement('td');
+                cellFlueGasDensity.textContent = flueGasDensityExcess.toFixed(3);
+                row.appendChild(cellFlueGasDensity);
+
+                flueGasTable.appendChild(row);
+            });
+        }
+
+        // Initial calculation on page load
+        calculate();
+    </script>
+</body>
+</html>
